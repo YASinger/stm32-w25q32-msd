@@ -7,6 +7,8 @@
 | V1.0 | 2026-06-09 | 初始版本，基于 PMOS 控制 D+ 上拉的假设 | Copilot |
 | V1.1 | 2026-06-09 | D+ 上拉方案更正为 PA12 GPIO 模式切换（本板无 PMOS，R10 硬接到 3.3V）；`USB_Cable_Config` 实现改用 PA12 AF_PP ↔ Out_PP 切换；删除 `USB_DISCONNECT` 引脚宏 | Copilot |
 | V1.2 | 2026-06-10 | USB 中断入口 `USB_LP_CAN1_RX0_IRQHandler` 从 `stm32f10x_it.c` 移至 `usb_istr.c`（保持标准模板文件不被污染）；`USB_Istr()` 由核心库说更正为应用层实现 | Copilot |
+| V1.3 | 2026-07-03 | 对应代码 v0.2.0：正文同步至实际实现（`main.c` 显式调用 `PowerOn()`；新增 PC13 LED 枚举成功指示；`USBWakeUp_IRQn` 由 `ENABLE` 改为 `DISABLE`） | Copilot |
+| V1.4 | 2026-07-03 | 对应代码 v0.2.1：修正 PMA 端点缓冲区地址为 16-bit 字偏移（ENDP0_RXADDR 0x18→0x20 等，原字节偏移与 BTABLE 重叠）；`fSuspendEnabled` 默认值由 `TRUE` 改为 `FALSE`，避免 SUSP 中断进入不可唤醒的 STOP 模式 | Copilot |
 
 ---
 
@@ -18,8 +20,8 @@
 | 需求描述 | USB 设备可被主机检测到 |
 | 验收标准 | 插入 USB 后 PC 设备管理器出现新设备 |
 | 所属阶段 | TR1 — USB 枚举通过 |
-| 文档版本 | V1.0 |
-| 日期 | 2026-06-09 |
+| 文档版本 | V1.4 |
+| 日期 | 2026-07-03 |
 
 ---
 
@@ -172,28 +174,29 @@ USB_Cable_Config(DISABLE) // "断开"
 ```
 USB_Interrupts_Config()
 ├── NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2)    // 2 位抢占 + 2 位响应
-├── NVIC_Init(USB_LP_CAN1_RX0_IRQn, Preempt=0, Sub=0) // USB 低优先级中断
-└── NVIC_Init(USBWakeUp_IRQn, Preempt=0)               // USB 唤醒中断 (可选)
+├── NVIC_Init(USB_LP_CAN1_RX0_IRQn, Preempt=2, Sub=0) // USB 低优先级中断
+└── NVIC_Init(USBWakeUp_IRQn, Preempt=0, DISABLE)     // USB 唤醒中断 (TR1 禁用; fSuspendEnabled=FALSE 故不会触发)
 ```
 
 ### 3.2 USB 端点配置 (`usb_conf`)
 
 #### 3.2.1 端点分配
 
-| 端点 | 方向 | 类型 | 包大小 | 缓冲区地址 | 用途 |
+| 端点 | 方向 | 类型 | 包大小 | 缓冲区地址 (字偏移) | 用途 |
 |---|---|---|---|---|---|
-| EP0 | IN/OUT | Control | 64B | RX=0x18, TX=0x58 | 枚举 / 标准请求 |
-| EP1 | IN | Bulk | 64B | TX=0x98 | 数据读取 + CSW (TR2+) |
-| EP2 | OUT | Bulk | 64B | RX=0xD8 | 数据写入 + CBW (TR2+) |
+| EP0 | IN/OUT | Control | 64B | RX=0x20, TX=0x40 | 枚举 / 标准请求 |
+| EP1 | IN | Bulk | 64B | TX=0x60 | 数据读取 + CSW (TR2+) |
+| EP2 | OUT | Bulk | 64B | RX=0x80 | 数据写入 + CBW (TR2+) |
 
-> **PMA 缓冲区布局**（共 512 字节，地址 0x40006000~0x400061FF）：
+> **PMA 缓冲区布局**（共 512 字节 = 256 字，地址 0x40006000~0x400061FF）：
+> 注意：以下地址均为 16-bit 字偏移，USB 库函数内部会 ×2 转为字节地址。
 > ```
-> BTABLE (0x00):   8×8=64 字节 (端点0~7 的 Buffer Description Table)
-> EP0_RX (0x18):  64 字节  ─┐
-> EP0_TX (0x58):  64 字节   ├─ 共 64×3=192 字节
-> EP1_TX (0x98):  64 字节   │  不重叠，64B 对齐
-> EP2_RX (0xD8):  64 字节  ─┘
-> 空闲: 0x118~0x1FF = 232 字节
+> BTABLE (0x00):  32 字 = 64B (端点0~7 的 Buffer Description Table)
+> EP0_RX (0x20):  32 字 = 64B  ─┐
+> EP0_TX (0x40):  32 字 = 64B   ├─ 共 64×3=192B
+> EP1_TX (0x60):  32 字 = 64B   │  不重叠，64B 对齐
+> EP2_RX (0x80):  32 字 = 64B  ─┘
+> 空闲: 0xA0~0xFF = 96 字 = 192B
 > ```
 
 #### 3.2.2 宏定义
@@ -201,12 +204,12 @@ USB_Interrupts_Config()
 ```c
 #define EP_NUM              (3)         // 使用 3 个端点 (EP0, EP1, EP2)
 
-/* 缓冲区地址 (相对 PMA 基址 0x40006000 的偏移) */
+/* 缓冲区地址 (16-bit 字偏移, 库函数内部 ×2 转字节地址) */
 #define BTABLE_ADDRESS      (0x00)      // 缓冲区描述表基址
-#define ENDP0_RXADDR        (0x18)      // EP0 接收缓冲区
-#define ENDP0_TXADDR        (0x58)      // EP0 发送缓冲区
-#define ENDP1_TXADDR        (0x98)      // EP1 IN  发送缓冲区
-#define ENDP2_RXADDR        (0xD8)      // EP2 OUT 接收缓冲区
+#define ENDP0_RXADDR        (0x20)      // EP0 接收缓冲区
+#define ENDP0_TXADDR        (0x40)      // EP0 发送缓冲区
+#define ENDP1_TXADDR        (0x60)      // EP1 IN  发送缓冲区
+#define ENDP2_RXADDR        (0x80)      // EP2 OUT 接收缓冲区
 
 /* ISTR 事件掩码 */
 #define IMR_MSK (CNTR_CTRM  | CNTR_WKUPM | CNTR_SUSPM | CNTR_ERRM  | CNTR_SOFM \
@@ -445,7 +448,7 @@ UNCONNECTED ──(PowerOn)──→ ATTACHED ──(RESET)──→ DEFAULT
 ```c
 /* usb_pwr.c 中的全局状态 */
 extern __IO uint32_t bDeviceState;    // USB 设备状态 (UNCONNECTED/ATTACHED/.../CONFIGURED)
-extern __IO bool     fSuspendEnabled; // 是否允许挂起
+extern __IO bool     fSuspendEnabled; // 是否允许挂起 (TR1 默认 FALSE, 避免 SUSP 中断进入 STOP)
 
 /* 函数接口 */
 void PowerOn(void);                   // 上电: 初始化 USB 核心, 连接 D+ 上拉
@@ -458,16 +461,18 @@ void Resume(RESUME_STATE eResumeSetVal); // 唤醒处理
 ```
 PowerOn()
 ├── USB_Cable_Config(ENABLE)          // ① PA12 切回 AF_PP → D+ 上拉生效
-├── CNTR->CNTR = CNTR_FRES            // ② 强制复位 USB 外设
-├── CNTR->CNTR = 0                    // ③ 清除复位
-├── CNTR->CNTR = IMR_MSK              // ④ 使能中断 (CTR/RESET/SUSP/WKUP/...)
-├── ISTR->ISTR = 0                    // ⑤ 清除挂起的中断标志
-└── bDeviceState = ATTACHED           // ⑥ 状态 → 已连接
+├── SetCNTR(CNTR_FRES)                // ② 强制复位 USB 外设
+├── SetCNTR(0)                        // ③ 清除复位
+├── SetISTR(0)                        // ④ 清除挂起的中断标志
+├── wInterrupt_Mask = IMR_MSK         // ⑤ 设置中断掩码
+├── SetCNTR(IMR_MSK)                  // ⑥ 使能中断 (CTR/RESET/SUSP/WKUP/...)
+└── bDeviceState = ATTACHED           // ⑦ 状态 → 已连接
 ```
 
 ### 3.7 主程序入口 (`main`)
 
 ```c
+#include "stm32f10x.h"
 #include "hw_config.h"
 #include "usb_lib.h"
 #include "usb_pwr.h"
@@ -477,15 +482,28 @@ int main(void)
     Set_System();                   // ① 系统时钟 + GPIO + D+上拉引脚
     Set_USBClock();                 // ② USB 48MHz 专用时钟
     USB_Interrupts_Config();        // ③ NVIC 中断配置
-    USB_Init();                     // ④ USB 核心库初始化 (内部调用 PowerOn)
+    USB_Init();                     // ④ USB 核心库初始化 (内部调用 MASS_init → USB_SIL_Init)
 
-    /* ⑤ 等待 PC 完成枚举 */
+    /* ── LED 初始化: PC13 推挽输出, 初始灭 (低电平点亮) ── */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+    GPIO_InitTypeDef GPIO_InitStructure;
+    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_13;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    GPIO_SetBits(GPIOC, GPIO_Pin_13);  // LED 初始灭
+
+    PowerOn();                      // ⑤ D+ 上拉使能 + USB 外设复位 + 中断使能
+
+    /* ⑥ 等待 PC 完成枚举 */
     while (bDeviceState != CONFIGURED);
 
-    /* ⑥ 枚举完成 → 主循环 (中断驱动, 什么都不用做) */
+    GPIO_ResetBits(GPIOC, GPIO_Pin_13);  // LED 亮 — 枚举成功 (CONFIGURED)
+
+    /* ⑦ 枚举完成 → 主循环 (中断驱动, 什么都不用做) */
     while (1)
     {
-        /* 
+        /*
          * USB 核心库的所有后续处理都在 USB_Istr() 中完成,
          * USB_Istr() 由 USB_LP_CAN1_RX0_IRQHandler 调用
          */
@@ -493,7 +511,9 @@ int main(void)
 }
 ```
 
-> **TR1-01 的简化主循环**：如果 TR1-01 只要求设备检测到（不要求完成配置），可以去掉 `while (bDeviceState != CONFIGURED);` 这行——只要 `USB_Init()` 执行了 `PowerOn()`，D+ 上拉就会使能，PC 就能检测到设备。但为了后续 TR1-06，建议保留。
+> **`PowerOn()` 由 main 显式调用**：`USB_Init()` → `MASS_init()` → `USB_SIL_Init()` 仅做设备表初始化和中断使能，不包含 D+ 上拉和 USB 外设 FRES 复位。`PowerOn()` 由 main 在 LED 初始化之后显式调用，确保 D+ 上拉前 GPIOC 已就绪。
+>
+> **`fSuspendEnabled = FALSE`**：TR1 阶段禁用挂起。主机在发 RESET 前的总线空闲期会触发 SUSP 中断，若 `fSuspendEnabled` 为 `TRUE` 则 MCU 进入 STOP 模式且无法唤醒（USBWakeUp 中断未配置），导致枚举彻底失败。
 
 ---
 

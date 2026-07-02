@@ -4,7 +4,7 @@
 
 /* ── 全局状态 ────────────────────────────────────────────────────────────── */
 __IO uint32_t bDeviceState = UNCONNECTED;
-__IO bool     fSuspendEnabled = TRUE;
+__IO bool     fSuspendEnabled = FALSE;   /* TR1 阶段禁用挂起, 避免 SUSP 中断进入 STOP 导致枚举失败 */
 __IO uint32_t remotewakeupon = 0;
 
 static struct {
@@ -15,15 +15,22 @@ static struct {
 /* ── PowerOn: 上电, 使能 D+ 上拉 ──────────────────────────────────────────── */
 void PowerOn(void)
 {
-    USB_Cable_Config(ENABLE);                   /* PA12 切 AF_PP → D+ 上拉使能 */
+    /* [1] D+ 上拉使能 — PA12 切回 AF_PP, 主机检测到全速设备插入 */
+    USB_Cable_Config(ENABLE);
 
-    SetCNTR(CNTR_FRES);                         /* 强制复位 USB 外设           */
-    SetCNTR(0);                                 /* 清除复位                     */
-    SetISTR(0);                                 /* 清除所有挂起的中断标志       */
+    /* [2] 强制复位 USB 外设, 清除 USB_SIL_Init 期间可能残留的状态 */
+    SetCNTR(CNTR_FRES);
+
+    /* [3] 清除强制复位 */
+    SetCNTR(0);
+
+    /* [4] 清除挂起的中断标志 + 使能 USB 中断 */
+    SetISTR(0);
     wInterrupt_Mask = IMR_MSK;
-    SetCNTR(IMR_MSK);                           /* 使能 USB 中断                */
+    SetCNTR(IMR_MSK);
 
-    bDeviceState = ATTACHED;                    /* 状态 → 已连接                */
+    /* [5] 状态 → 已连接 */
+    bDeviceState = ATTACHED;
 }
 
 /* ── PowerOff: 断电, 断开 D+ 上拉 ─────────────────────────────────────────── */

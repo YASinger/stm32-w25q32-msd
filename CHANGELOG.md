@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.1] - 2026-07-03
+### Fixed
+- 修复 USB 枚举失败根因：`fSuspendEnabled` 由 `TRUE` 改为 `FALSE`，避免 SUSP 中断将 MCU 拉入不可唤醒的 STOP 模式（USBWakeUp 中断未配置，唤醒路径缺失）
+- 修正 `usb_conf.h` PMA 端点缓冲区地址为 16-bit 字偏移（ENDP0_RXADDR 0x18→0x20 等，原字节偏移导致与 BTABLE 重叠）
+
+### Added
+- `main.c` 添加 PC13 LED 初始化及枚举成功指示（CONFIGURED 后点亮）
+
+### Changed
+- `main.c` 显式调用 `PowerOn()`（原由 `USB_Init` 内部调用）
+- `hw_config.c` USBWakeUp 中断由 `ENABLE` 改为 `DISABLE`（TR1 阶段不使用挂起/唤醒）
+
 ## [0.2.0] - 2026-06-10
 ### Added
 - 实现 TR1-01 USB 设备可被主机检测到

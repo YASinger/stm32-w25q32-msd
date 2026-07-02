@@ -44,11 +44,11 @@ void USB_Interrupts_Config(void)
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
-    /* USB 唤醒中断 */
+    /* USB 唤醒中断 — TR1 暂不需要，若触发将进入 WEAK 死循环 */
     NVIC_InitStructure.NVIC_IRQChannel = USBWakeUp_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
     NVIC_Init(&NVIC_InitStructure);
 }
 
