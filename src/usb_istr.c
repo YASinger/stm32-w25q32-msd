@@ -8,10 +8,15 @@
 #include "usb_lib.h"
 #include "usb_pwr.h"
 
+/* TR2-S1: EP1_IN_Callback / EP2_OUT_Callback 由 usb_endp.c 提供函数实体,
+ *         不再由 usb_conf.h 宏定义为 NOP_Process, 此处需 extern 声明 */
+extern void EP1_IN_Callback(void);
+extern void EP2_OUT_Callback(void);
+
 __IO uint16_t wIstr;
 __IO uint8_t  bIntPackSOF = 0;
 
-/* 端点回调表 — TR1 阶段全部指向 NOP_Process */
+/* 端点回调表 — EP1/EP2 已接管为 BOT 状态机, 其余为 NOP_Process */
 void (*pEpInt_IN[7])(void) = {
     EP1_IN_Callback,
     EP2_IN_Callback,

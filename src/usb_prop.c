@@ -8,6 +8,8 @@
 #include "usb_lib.h"
 #include "usb_desc.h"
 #include "usb_pwr.h"
+#include "usb_bot.h"
+#include "mass_mal.h"
 
 /* ── MSC Bulk-Only 类请求码 (USB MSC 规范) ─────────────────────────────── */
 #define GET_MAX_LUN         0xFE    /* 获取最大 LUN 号 (带 1 字节数据阶段, IN) */
@@ -15,7 +17,7 @@
 #define LUN_DATA_LENGTH     0x01    /* GET_MAX_LUN 返回数据长度 */
 
 /* 本设备仅 1 个 LUN (逻辑单元号 0), Max_Lun=0 表示仅 LUN 0 */
-static uint32_t Max_Lun = 0;
+uint32_t Max_Lun = 0;
 
 /* ── 端点配置表 ─────────────────────────────────────────────────────────── */
 DEVICE Device_Table = {
@@ -144,6 +146,13 @@ static void MASS_Reset(void)
     SetEPRxValid(ENDP0);
     SetDeviceAddress(0);
 
+    /* TR2-S1: 初始化 BOT 状态机 */
+    Bot_State = BOT_IDLE;
+    CBW.dSignature = BOT_CBW_SIGNATURE;
+
+    /* TR2-S2: 初始化 SRAM 介质层 */
+    MAL_Init(0);
+
     bDeviceState = ATTACHED;
 }
 
@@ -201,9 +210,13 @@ static RESULT MASS_NoData_Setup(uint8_t RequestNo)
         && (pInformation->USBwIndex == 0)
         && (pInformation->USBwLength == 0x00)) {
 
-        /* 复位 Bulk 端点 DTOG, 恢复到 CBW 等待状态 (TR1 无 BOT 状态机, 仅清 DTOG) */
+        /* 复位 Bulk 端点 DTOG, 恢复到 CBW 等待状态 */
         ClearDTOG_TX(ENDP1);
         ClearDTOG_RX(ENDP2);
+
+        /* TR2-S1: 重置 BOT 状态机 */
+        Bot_State = BOT_IDLE;
+        CBW.dSignature = BOT_CBW_SIGNATURE;
 
         return USB_SUCCESS;
     }
@@ -254,6 +267,9 @@ static void Mass_Storage_SetConfiguration(void)
         bDeviceState = CONFIGURED;
         ClearDTOG_TX(ENDP1);
         ClearDTOG_RX(ENDP2);
+        /* TR2-S1: 配置成功后重置 BOT 状态机 */
+        Bot_State = BOT_IDLE;
+        CBW.dSignature = BOT_CBW_SIGNATURE;
     } else {
         bDeviceState = ADDRESSED;
     }
