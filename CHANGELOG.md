@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.2] - 2026-07-15
+### Fixed
+- 修复设备管理器黄色感叹号（CM_PROB_FAILED_START）：MSC 类请求（GET_MAX_LUN、Bulk-Only Mass Storage Reset）此前被 STALL，导致 Windows USBSTOR 驱动启动失败。现已正确响应
+- 修复产品字符串内容与需求不符：由 "STM32 Mass Storage" 改为 "STM32 W25Q32 Flash Disk"
+
+### Added
+- 新增序列号唯一性：读取 MCU 唯一 ID 生成 12 位十六进制序列号，每块板子不同
+- 实现 GET_MAX_LUN 类请求响应（返回 1 字节，表示仅 1 个 LUN）
+- 实现 Bulk-Only Mass Storage Reset 类请求响应（复位 Bulk 端点）
+- 设备属性回调表与标准请求回调表添加中文注释
+
+
 ## [0.2.1] - 2026-07-03
 ### Fixed
 - 修复 USB 枚举失败根因：`fSuspendEnabled` 由 `TRUE` 改为 `FALSE`，避免 SUSP 中断将 MCU 拉入不可唤醒的 STOP 模式（USBWakeUp 中断未配置，唤醒路径缺失）

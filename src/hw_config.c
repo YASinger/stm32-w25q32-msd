@@ -1,4 +1,10 @@
 #include "hw_config.h"
+#include "usb_desc.h"
+
+/* MCU 96-bit 唯一 ID 寄存器地址 (STM32F10x) */
+#define ID1     (0x1FFFF7E8)
+#define ID2     (0x1FFFF7EC)
+#define ID3     (0x1FFFF7F0)
 
 void Set_System(void)
 {
@@ -68,5 +74,37 @@ void USB_Cable_Config(FunctionalState NewState)
         /* 连接: PA12 恢复 AF_PP → D+ 被 R10(1.5kΩ) 上拉到 3.3V */
         GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
         GPIO_Init(GPIOA, &GPIO_InitStructure);
+    }
+}
+
+/* ── IntToUnicode: 32 位值转 len 位十六进制 Unicode 字符 ─────────────────── */
+static void IntToUnicode(uint32_t value, uint8_t *pbuf, uint8_t len)
+{
+    uint8_t idx;
+    for (idx = 0; idx < len; idx++) {
+        if ((value >> 28) < 0xA) {
+            pbuf[2 * idx] = (uint8_t)((value >> 28) + '0');
+        } else {
+            pbuf[2 * idx] = (uint8_t)((value >> 28) + 'A' - 10);
+        }
+        value <<= 4;
+        pbuf[2 * idx + 1] = 0;
+    }
+}
+
+/* ── Get_SerialNum: 用 MCU 96-bit UID 填充序列号字符串 (12 位十六进制) ──── */
+void Get_SerialNum(void)
+{
+    uint32_t Device_Serial0, Device_Serial1, Device_Serial2;
+
+    Device_Serial0 = *(uint32_t *)ID1;
+    Device_Serial1 = *(uint32_t *)ID2;
+    Device_Serial2 = *(uint32_t *)ID3;
+
+    Device_Serial0 += Device_Serial2;
+
+    if (Device_Serial0 != 0) {
+        IntToUnicode(Device_Serial0, &MASS_StringSerial[2], 8);
+        IntToUnicode(Device_Serial1, &MASS_StringSerial[18], 4);
     }
 }

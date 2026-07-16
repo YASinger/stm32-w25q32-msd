@@ -8,6 +8,7 @@ int main(void)
 	Set_System();                   // 系统时钟 + GPIO (PA11 AF_PP, PA12 初始输出低)
 	Set_USBClock();                 // USB 48MHz
 	USB_Interrupts_Config();        // NVIC
+	Get_SerialNum();                // 用 MCU 唯一 ID 填充序列号字符串 (TR1-04)
 	USB_Init();                     // 初始化设备表、调用 MASS_init() → USB_SIL_Init()
 
 	/* ── LED 初始化: PC13 推挽输出, 初始灭 (低电平点亮) ── */

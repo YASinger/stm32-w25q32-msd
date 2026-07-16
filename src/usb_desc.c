@@ -83,13 +83,14 @@ const uint8_t MASS_StringVendor[MASS_SIZ_STRING_VENDOR] = {
     'c', 0, 's', 0
 };
 
-/* 产品字符串: "STM32 W25Q32 Flash Disk" */
+/* 产品字符串: "STM32 W25Q32 Flash Disk" (23 字符, 48 字节) */
 const uint8_t MASS_StringProduct[MASS_SIZ_STRING_PRODUCT] = {
     MASS_SIZ_STRING_PRODUCT,
     0x03,
     'S', 0, 'T', 0, 'M', 0, '3', 0, '2', 0, ' ', 0,
-    'M', 0, 'a', 0, 's', 0, 's', 0, ' ', 0,
-    'S', 0, 't', 0, 'o', 0, 'r', 0, 'a', 0, 'g', 0, 'e', 0
+    'W', 0, '2', 0, '5', 0, 'Q', 0, '3', 0, '2', 0, ' ', 0,
+    'F', 0, 'l', 0, 'a', 0, 's', 0, 'h', 0, ' ', 0,
+    'D', 0, 'i', 0, 's', 0, 'k', 0
 };
 
 /* 序列号 (运行时由 Get_SerialNum 填充) */
