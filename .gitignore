@@ -1,0 +1,9 @@
+.vscode
+DebugConfig
+Listings
+Objects
+
+*.uvguix.*
+*.uvoptx
+
+tmp
