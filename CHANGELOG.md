@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.3.1] - 2026-07-19
+### Added
+- 设备类型被 PC 正确识别：从"未知 USB 设备（设备描述符请求失败）"变为"USB 大容量存储设备"，Windows USBSTOR 驱动已关联——这是枚举流程从"失败"到"成功"的转折点
+- 配置描述符完整可读：USBTreeView 可查看完整配置（Mass Storage Class, Bulk-Only Transport, SCSI transparent, 2 个 Bulk 端点, 自供电, 100mA）
+- 新增设计文档《TR1-C1：配置描述符》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：Connection Status 从"枚举失败"变为"已连接"，设备描述符+配置描述符完整可读，USBSTOR.SYS 驱动已加载
+- Problem Code 从 43（枚举失败）改善为 10（驱动启动失败）——USBSTOR 驱动初始化时发 SCSI 命令探测存储介质，但 BOT 协议尚未实现（TR2），设备无响应导致驱动启动失败。这是 TR1-C4（MSC 类请求）要解决的问题
+- C1 验收通过（配置描述符完整，设备类型正确识别），可推进 TR1-C2
+
 ## [0.2.4] - 2026-07-19
 ### Added
 - 最小枚举流程闭环：设备初始化序列（时钟→GPIO→NVIC→设备属性→D+上拉）完整串联，程序现在会等待主机完成 SET_CONFIGURATION 后才进入主循环，为枚举完成检测提供了明确的观测点

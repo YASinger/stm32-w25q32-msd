@@ -29,12 +29,18 @@ static ONE_DESCRIPTOR Device_Descriptor = {
     MASS_SIZ_DEVICE_DESC
 };
 
+static ONE_DESCRIPTOR Config_Descriptor = {
+    (uint8_t *)MASS_ConfigDescriptor,
+    MASS_SIZ_CONFIG_DESC
+};
+
 /* ── 前向声明 ────────────────────────────────────────────────────────────── */
 static void MASS_init(void);
 static void MASS_Reset(void);
 static void MASS_Status_In(void);
 static void MASS_Status_Out(void);
 static uint8_t *MASS_GetDeviceDescriptor(uint16_t Length);
+static uint8_t *MASS_GetConfigDescriptor(uint16_t Length);
 
 static void Mass_Storage_GetConfiguration(void);
 static void Mass_Storage_SetConfiguration(void);
@@ -56,7 +62,7 @@ DEVICE_PROP Device_Property = {
     0,                            /* Class_NoData_Setup — C4 实现 */
     0,                            /* Class_Get_Interface_Setting — C3 实现 */
     MASS_GetDeviceDescriptor,    /* GetDeviceDescriptor */
-    0,                            /* GetConfigDescriptor — C1 实现 */
+    MASS_GetConfigDescriptor,    /* GetConfigDescriptor */
     0,                            /* GetStringDescriptor — C2 实现 */
     0,                            /* RxEP_buffer — 旧版兼容字段，未使用 */
     0x40                          /* MaxPacketSize — EP0 64 字节 */
@@ -89,8 +95,7 @@ static void MASS_init(void)
 static void MASS_Reset(void)
 {
     Device_Info.Current_Configuration = 0;
-    /* pInformation->Current_Feature = MASS_ConfigDescriptor[7]; */  /* C1 实现 */
-    pInformation->Current_Feature = 0xC0;  /* B2 硬编码: 自供电 (§6.7 bmAttributes) */
+    pInformation->Current_Feature = MASS_ConfigDescriptor[7];
 
     SetBTABLE(BTABLE_ADDRESS);
 
@@ -136,6 +141,11 @@ static void MASS_Status_Out(void)
 static uint8_t *MASS_GetDeviceDescriptor(uint16_t Length)
 {
     return Standard_GetDescriptorData(Length, &Device_Descriptor);
+}
+
+static uint8_t *MASS_GetConfigDescriptor(uint16_t Length)
+{
+    return Standard_GetDescriptorData(Length, &Config_Descriptor);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
