@@ -15,6 +15,7 @@
 
 #include "usb_lib.h"
 #include "usb_desc.h"
+#include "usb_pwr.h"
 
 /* ── 端点配置表 ─────────────────────────────────────────────────────────── */
 DEVICE Device_Table = {
@@ -82,7 +83,7 @@ static void MASS_init(void)
 {
     pInformation->Current_Configuration = 0;
     USB_SIL_Init();
-    /* bDeviceState = UNCONNECTED; */  /* B3 实现 (usb_pwr.h) */
+    bDeviceState = UNCONNECTED;
 }
 
 static void MASS_Reset(void)
@@ -119,7 +120,7 @@ static void MASS_Reset(void)
     SetEPRxValid(ENDP0);
     SetDeviceAddress(0);
 
-    /* bDeviceState = ATTACHED; */  /* B3 实现 (usb_pwr.h) */
+    bDeviceState = ATTACHED;
 }
 
 static void MASS_Status_In(void)

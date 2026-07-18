@@ -5,6 +5,19 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.3] - 2026-07-19
+### Added
+- USB 电源管理完善：D+ 上拉使能、USB 外设复位、中断使能现在通过正式的 PowerOn() 完成，替代了 A2 阶段的临时调用，USB 外设状态更干净，减少偶发性枚举失败
+- USB 设备状态机激活：设备状态（UNCONNECTED→ATTACHED→POWERED→CONFIGURED）现在被正确跟踪，为后续枚举完成检测提供基础
+- 挂起中断安全处理：主机总线空闲期触发的 SUSP 中断现在被安全忽略（不进入 STOP 模式），避免枚举被意外打断——这是枚举能稳定成功的关键保障
+- 新增设计文档《TR1-B3：usb_pwr 电源管理与状态机》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 B2 表现一致（设备描述符完整可读，Problem Code 43）——符合本阶段预期（电源管理是内部改善，配置描述符待 C1 补全后 Problem Code 才消失）
+- A4/B2 预留的恢复点全部激活：usb_istr.c 恢复 8 分支完整结构，usb_prop.c 的 bDeviceState 赋值已取消注释
+- B3 验收通过，可推进 TR1-B4
+
 ## [0.2.2] - 2026-07-18
 ### Added
 - PC 首次识别到设备：主机成功读取设备描述符（VID=0x0483 STMicroelectronics, PID=0x5720），设备管理器出现"未知 USB 设备"——TR1-01 验收通过，这是项目历史上第一次被 PC 识别

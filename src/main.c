@@ -1,14 +1,15 @@
 #include "stm32f10x.h"                  // Device header
 #include "hw_config.h"
 #include "usb_lib.h"
+#include "usb_pwr.h"
 
 int main(void)
 {
   Set_System();
   Set_USBClock();
   USB_Interrupts_Config();
-  USB_Init();                  /* B2 新增: 调用 MASS_init() → USB_SIL_Init() */
-  USB_Cable_Config(ENABLE);    /* PA12 切为 AF_PP, D+ 上拉生效 */
+  USB_Init();                  /* B2: 调用 MASS_init() → USB_SIL_Init() */
+  PowerOn();                   /* B3: D+ 上拉使能 + USB 外设复位 + 中断使能 */
 
   while (1)
   {
