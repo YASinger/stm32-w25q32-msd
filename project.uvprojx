@@ -401,6 +401,11 @@
               <FilePath>.\src\hw_config.c</FilePath>
             </File>
             <File>
+              <FileName>usb_istr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\usb_istr.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_it.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f10x_it.h</FilePath>
@@ -419,6 +424,11 @@
               <FileName>hw_config.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\hw_config.h</FilePath>
+            </File>
+            <File>
+              <FileName>usb_istr.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\usb_istr.h</FilePath>
             </File>
           </Files>
         </Group>

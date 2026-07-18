@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.1.4] - 2026-07-18
+### Added
+- USB 中断全链路打通：从 NVIC 中断通道（A2）到中断入口再到事件分发器，USB 外设产生的中断现在能被 CPU 捕获并分发到对应处理函数，骨架阶段（TR1-A）全部完成
+- 新增设计文档《TR1-A4：usb_istr 中断服务与 ISTR 分发》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 A2/A3 表现一致（主机识别 Full-Speed，设备描述符请求失败）——符合本阶段预期（中断入口已就绪，但协议栈响应部分尚未实现）
+- A4 验收通过，可推进 TR1-B 最小枚举
+
 ## [0.1.3] - 2026-07-18
 ### Added
 - USB 端点缓冲区布局固定：EP0/EP1/EP2 在 USB 专用 RAM 中的收发位置已规划完成，采用无重叠的安全布局（规避了历史上因地址重叠导致枚举失败的问题）
