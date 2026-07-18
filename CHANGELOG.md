@@ -5,6 +5,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.1.3] - 2026-07-18
+### Added
+- USB 端点缓冲区布局固定：EP0/EP1/EP2 在 USB 专用 RAM 中的收发位置已规划完成，采用无重叠的安全布局（规避了历史上因地址重叠导致枚举失败的问题）
+- 端点传输回调占位：EP1~EP7 的传输完成回调已绑定到空操作，为后续 BOT 协议（TR2）接管 EP1/EP2 预留了替换点
+- 新增设计文档《TR1-A3：usb_conf 端点与 PMA 配置》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 A2 表现一致（主机识别 Full-Speed，设备描述符请求失败）——符合本阶段预期（仅编译期配置，无运行行为变化）
+- A3 验收通过，可推进 TR1-A4
+
 ## [0.1.2] - 2026-07-18
 ### Added
 - USB 外设硬件初始化：插入 USB 后主机可识别到 Full-Speed 设备（D+ 上拉生效，USB 48MHz 时钟工作正常）
