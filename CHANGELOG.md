@@ -5,20 +5,26 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [0.1.1] - 2026-07-17
+## [0.1.2] - 2026-07-18
 ### Added
-- TR1-A1：工程骨架与库集成
-- `project.uvprojx` 配置 4 个 Group（src / Start / StdPeriph / USB-FS-Device），STM32F103C8 设备选型，`USE_STDPERIPH_DRIVER` 宏，4 条 IncludePath
-- `inc/usb_conf.h` 占位文件（满足 `usb_type.h` 的 `#include` 依赖，正式内容由 TR1-A3 填充）
-- 设计文档 `docs/TR1框架设计.md`、`docs/详设/TR1-A1：工程骨架与库集成.md`
-- 需求列表更新为"骨架→最小枚举→逐层补全"三层拆分结构（TR1-A/B/C 共 13 条开发任务）
-
-### Fixed
-- 补 `inc/hw_config.h` 占位：ST USB 库 `usb_lib.h:44` 硬性 `#include "hw_config.h"`，A1 未提供导致 6 个 USB 库 `.c` 编译失败
-- `inc/hw_config.h` 加入 `#include "stm32f10x.h"`：`usb_regs.h` 直接使用 `__IO`/`uint16_t` 等 CMSIS 类型却不自包含，依赖 `hw_config.h` 作为类型入口，缺失导致 180 个编译错误
-- `inc/usb_conf.h` 补 `IMR_MSK` 定义：`usb_sil.c:73` (`USB_SIL_Init`) 硬性引用该宏，掩码项遵循 §6.2 禁用挂起模式约束
-- 新增 `src/usb_globals.c`：用 `__attribute__((weak))` 提供 6 个 USB 库链接依赖的全局符号占位（`wIstr`/`pEpInt_IN`/`pEpInt_OUT`/`Device_Table`/`Device_Property`/`User_Standard_Requests`），这些符号按设计属 A4/B2，但链接器在 A1 即需引用
+- USB 外设硬件初始化：插入 USB 后主机可识别到 Full-Speed 设备（D+ 上拉生效，USB 48MHz 时钟工作正常）
+- USB 中断通道打通：USB 低优先级中断已在 NVIC 注册，为后续 ISTR 事件分发（TR1-A4）提供入口
+- 软件重连能力（接口层）：提供通过软件控制 D+ 上拉通断的接口，后续可通过调用实现 PC 端设备拔出/重新插入的效果（TR1-C5 将启用）
+- 新增设计文档《TR1-A2：hw_config 硬件初始化》
 
 ### 状态
-- Keil 编译链接通过，0 Error 0 Warning，`Objects/project.axf` 生成
-- 发现并记录 ST USB 库三处与应用层的硬耦合点（详见 `docs/详设/TR1-A1：工程骨架与库集成.md` §8）
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：主机识别 Full-Speed 设备，因协议栈未工作（无设备描述符响应）显示"设备描述符请求失败"——符合本阶段预期
+- A2 验收通过，可推进 TR1-A3
+
+## [0.1.1] - 2026-07-17
+### Added
+- 工程骨架就位：STM32F103C8 目标工程可编译、可链接、可烧录，为标准外设库与 USB 库后续集成提供基础
+- 需求拆分落地：TR1 阶段拆分为"骨架→最小枚举→逐层补全"三层共 13 条开发任务，每条对应一次独立提交
+
+### Fixed
+- 修复 USB 库与应用层的三处硬耦合导致的编译/链接失败：补齐硬件配置头文件（USB 库编译依赖）、中断屏蔽配置（USB 库初始化依赖）、全局符号占位（USB 库链接依赖）
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning，固件可烧录
+- 发现并记录 ST USB 库与应用层的耦合点，为后续阶段扫清障碍

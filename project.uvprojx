@@ -396,6 +396,11 @@
               <FilePath>.\src\usb_globals.c</FilePath>
             </File>
             <File>
+              <FileName>hw_config.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\hw_config.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_it.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f10x_it.h</FilePath>
