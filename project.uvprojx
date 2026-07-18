@@ -391,11 +391,6 @@
               <FilePath>.\src\stm32f10x_it.c</FilePath>
             </File>
             <File>
-              <FileName>usb_globals.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\src\usb_globals.c</FilePath>
-            </File>
-            <File>
               <FileName>hw_config.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\hw_config.c</FilePath>
@@ -409,6 +404,11 @@
               <FileName>usb_desc.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\usb_desc.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_prop.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\usb_prop.c</FilePath>
             </File>
             <File>
               <FileName>stm32f10x_it.h</FileName>
@@ -439,6 +439,11 @@
               <FileName>usb_desc.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\usb_desc.h</FilePath>
+            </File>
+            <File>
+              <FileName>usb_prop.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\usb_prop.h</FilePath>
             </File>
           </Files>
         </Group>

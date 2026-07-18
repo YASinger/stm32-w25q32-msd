@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.2] - 2026-07-18
+### Added
+- PC 首次识别到设备：主机成功读取设备描述符（VID=0x0483 STMicroelectronics, PID=0x5720），设备管理器出现"未知 USB 设备"——TR1-01 验收通过，这是项目历史上第一次被 PC 识别
+- USB 端点硬件配置完成：EP0 控制端点、EP1 Bulk IN、EP2 Bulk OUT 的类型与缓冲区地址已配置，主机已分配设备地址（0x29）
+- 新增设计文档《TR1-B2：usb_prop 设备属性与 MASS_Reset》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：设备描述符 18 字节完整可读（VID/PID/bcdUSB/bMaxPacketSize0 正确），EP0 激活，主机分配设备地址——B2 核心验收通过
+- 配置描述符与字符串描述符尚未实现（C1/C2），Windows 标记 Problem Code 43（设备启动失败）——预期行为，C1 补全后消失
+- B2 验收通过，可推进 TR1-B3
+
 ## [0.2.1] - 2026-07-18
 ### Added
 - 设备身份数据就位：USB 设备描述符（VID=0x0483 STMicroelectronics, PID=0x5720）已定义，为主机识别设备提供了数据基础
