@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.4] - 2026-07-19
+### Added
+- 最小枚举流程闭环：设备初始化序列（时钟→GPIO→NVIC→设备属性→D+上拉）完整串联，程序现在会等待主机完成 SET_CONFIGURATION 后才进入主循环，为枚举完成检测提供了明确的观测点
+- 新增设计文档《TR1-B4：main 主流程串联》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 B2/B3 表现一致（设备描述符完整可读，Problem Code 43）——符合本阶段预期（主流程串联是内部行为，不影响主机端枚举过程）
+- TR1-B 最小枚举阶段全部完成，可推进 TR1-C 逐层补全
+
 ## [0.2.3] - 2026-07-19
 ### Added
 - USB 电源管理完善：D+ 上拉使能、USB 外设复位、中断使能现在通过正式的 PowerOn() 完成，替代了 A2 阶段的临时调用，USB 外设状态更干净，减少偶发性枚举失败

@@ -11,6 +11,8 @@ int main(void)
   USB_Init();                  /* B2: 调用 MASS_init() → USB_SIL_Init() */
   PowerOn();                   /* B3: D+ 上拉使能 + USB 外设复位 + 中断使能 */
 
+  while (bDeviceState != CONFIGURED);  /* B4: 等待枚举完成 (C3 后退出) */
+
   while (1)
   {
   }
