@@ -34,6 +34,14 @@ static ONE_DESCRIPTOR Config_Descriptor = {
     MASS_SIZ_CONFIG_DESC
 };
 
+static ONE_DESCRIPTOR String_Descriptor[5] = {
+    {(uint8_t *)MASS_StringLangID,    MASS_SIZ_STRING_LANGID},
+    {(uint8_t *)MASS_StringVendor,    MASS_SIZ_STRING_VENDOR},
+    {(uint8_t *)MASS_StringProduct,   MASS_SIZ_STRING_PRODUCT},
+    {(uint8_t *)MASS_StringSerial,    MASS_SIZ_STRING_SERIAL},
+    {(uint8_t *)MASS_StringInterface, MASS_SIZ_STRING_INTERFACE},
+};
+
 /* ── 前向声明 ────────────────────────────────────────────────────────────── */
 static void MASS_init(void);
 static void MASS_Reset(void);
@@ -41,6 +49,7 @@ static void MASS_Status_In(void);
 static void MASS_Status_Out(void);
 static uint8_t *MASS_GetDeviceDescriptor(uint16_t Length);
 static uint8_t *MASS_GetConfigDescriptor(uint16_t Length);
+static uint8_t *MASS_GetStringDescriptor(uint16_t Length);
 
 static void Mass_Storage_GetConfiguration(void);
 static void Mass_Storage_SetConfiguration(void);
@@ -63,7 +72,7 @@ DEVICE_PROP Device_Property = {
     0,                            /* Class_Get_Interface_Setting — C3 实现 */
     MASS_GetDeviceDescriptor,    /* GetDeviceDescriptor */
     MASS_GetConfigDescriptor,    /* GetConfigDescriptor */
-    0,                            /* GetStringDescriptor — C2 实现 */
+    MASS_GetStringDescriptor,   /* GetStringDescriptor */
     0,                            /* RxEP_buffer — 旧版兼容字段，未使用 */
     0x40                          /* MaxPacketSize — EP0 64 字节 */
 };
@@ -146,6 +155,18 @@ static uint8_t *MASS_GetDeviceDescriptor(uint16_t Length)
 static uint8_t *MASS_GetConfigDescriptor(uint16_t Length)
 {
     return Standard_GetDescriptorData(Length, &Config_Descriptor);
+}
+
+static uint8_t *MASS_GetStringDescriptor(uint16_t Length)
+{
+    uint8_t index = pInformation->USBwValue0;
+    uint8_t *pBuf = NULL;
+
+    if (index < 5) {
+        pBuf = Standard_GetDescriptorData(Length, &String_Descriptor[index]);
+    }
+
+    return pBuf;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

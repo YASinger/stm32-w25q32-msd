@@ -15,6 +15,12 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "hw_config.h"
+#include "usb_desc.h"
+
+/* MCU 96-bit 唯一 ID 寄存器地址 (STM32F10x) */
+#define ID1     (0x1FFFF7E8)
+#define ID2     (0x1FFFF7EC)
+#define ID3     (0x1FFFF7F0)
 
 /* Private variables ---------------------------------------------------------*/
 ErrorStatus HSEStartUpStatus;
@@ -144,4 +150,50 @@ void Enter_LowPowerMode(void)
 void Leave_LowPowerMode(void)
 {
   /* TR1 禁用挂起, 空实现 */
+}
+
+/*******************************************************************************
+* Function Name  : IntToUnicode
+* Description    : 32 位值转 len 位十六进制 Unicode 字符
+* Input          : value - 32 位值
+*                  pbuf  - 输出缓冲区 (每字符 2 字节: ASCII + 0x00)
+*                  len   - 十六进制位数
+* Return         : None
+*******************************************************************************/
+static void IntToUnicode(uint32_t value, uint8_t *pbuf, uint8_t len)
+{
+  uint8_t idx;
+  for (idx = 0; idx < len; idx++) {
+    if ((value >> 28) < 0xA) {
+      pbuf[2 * idx] = (uint8_t)((value >> 28) + '0');
+    } else {
+      pbuf[2 * idx] = (uint8_t)((value >> 28) + 'A' - 10);
+    }
+    value <<= 4;
+    pbuf[2 * idx + 1] = 0;
+  }
+}
+
+/*******************************************************************************
+* Function Name  : Get_SerialNum
+* Description    : 用 MCU 96-bit UID 填充序列号字符串 (12 位十六进制)
+* Input          : None
+* Return         : None
+* Note           : 读 3 个 UID 寄存器, 混合后转 12 位十六进制填入
+*                  MASS_StringSerial。每块板子序列号不同。
+*******************************************************************************/
+void Get_SerialNum(void)
+{
+  uint32_t Device_Serial0, Device_Serial1, Device_Serial2;
+
+  Device_Serial0 = *(uint32_t *)ID1;
+  Device_Serial1 = *(uint32_t *)ID2;
+  Device_Serial2 = *(uint32_t *)ID3;
+
+  Device_Serial0 += Device_Serial2;
+
+  if (Device_Serial0 != 0) {
+    IntToUnicode(Device_Serial0, &MASS_StringSerial[2], 8);
+    IntToUnicode(Device_Serial1, &MASS_StringSerial[18], 4);
+  }
 }

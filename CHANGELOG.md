@@ -5,6 +5,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.3.2] - 2026-07-19
+### Added
+- 设备身份信息完整：PC 现在能显示设备的厂商（"STMicroelectronics"）、产品名（"STM32 W25Q32 Flash Disk"）和唯一序列号（读 MCU 96-bit UID 生成的 12 位十六进制），每块板子序列号不同
+- 新增设计文档《TR1-C2：字符串描述符》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：Summary 显示 Serial="8D6F405D5656"、BusReported Device Desc="STM32 W25Q32 Flash Disk"，Device ID 用序列号作实例 ID——字符串描述符数据正确
+- String Descriptors 详细查看仍显示 "not available"——这是 Problem Code 10 的副作用（USBTreeView 在设备有故障码时不逐个请求字符串），C4 解决 Problem Code 10 后会完整可读
+- C2 验收通过，可推进 TR1-C3
+
 ## [0.3.1] - 2026-07-19
 ### Added
 - 设备类型被 PC 正确识别：从"未知 USB 设备（设备描述符请求失败）"变为"USB 大容量存储设备"，Windows USBSTOR 驱动已关联——这是枚举流程从"失败"到"成功"的转折点

@@ -64,3 +64,46 @@ const uint8_t MASS_ConfigDescriptor[MASS_SIZ_CONFIG_DESC] = {
     0x00,
     0x00    /* bInterval                                       */
 };
+
+/* ── 字符串描述符 ─────────────────────────────────────────────────────────── */
+
+/* 语言 ID */
+const uint8_t MASS_StringLangID[MASS_SIZ_STRING_LANGID] = {
+    MASS_SIZ_STRING_LANGID,
+    0x03,                     /* bDescriptorType = STRING */
+    0x09, 0x04                /* LangID = 0x0409 (English US) */
+};
+
+/* 厂商字符串: "STMicroelectronics" */
+const uint8_t MASS_StringVendor[MASS_SIZ_STRING_VENDOR] = {
+    MASS_SIZ_STRING_VENDOR,
+    0x03,
+    'S', 0, 'T', 0, 'M', 0, 'i', 0, 'c', 0, 'r', 0, 'o', 0, 'e', 0,
+    'l', 0, 'e', 0, 'c', 0, 't', 0, 'r', 0, 'o', 0, 'n', 0, 'i', 0,
+    'c', 0, 's', 0
+};
+
+/* 产品字符串: "STM32 W25Q32 Flash Disk" */
+const uint8_t MASS_StringProduct[MASS_SIZ_STRING_PRODUCT] = {
+    MASS_SIZ_STRING_PRODUCT,
+    0x03,
+    'S', 0, 'T', 0, 'M', 0, '3', 0, '2', 0, ' ', 0,
+    'W', 0, '2', 0, '5', 0, 'Q', 0, '3', 0, '2', 0, ' ', 0,
+    'F', 0, 'l', 0, 'a', 0, 's', 0, 'h', 0, ' ', 0,
+    'D', 0, 'i', 0, 's', 0, 'k', 0
+};
+
+/* 序列号 (运行时由 Get_SerialNum 填充) */
+uint8_t MASS_StringSerial[MASS_SIZ_STRING_SERIAL] = {
+    MASS_SIZ_STRING_SERIAL,
+    0x03,
+    'S', 0, 'T', 0, 'M', 0, '3', 0, '2', 0, ' ', 0,
+    '0', 0, '0', 0, '0', 0, '0', 0, '0', 0, '0', 0
+};
+
+/* 接口字符串: "ST Mass" */
+const uint8_t MASS_StringInterface[MASS_SIZ_STRING_INTERFACE] = {
+    MASS_SIZ_STRING_INTERFACE,
+    0x03,
+    'S', 0, 'T', 0, ' ', 0, 'M', 0, 'a', 0, 's', 0, 's', 0
+};

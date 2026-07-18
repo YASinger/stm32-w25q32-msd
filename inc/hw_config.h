@@ -25,5 +25,6 @@ void USB_Interrupts_Config(void);
 void USB_Cable_Config(FunctionalState NewState);
 void Enter_LowPowerMode(void);
 void Leave_LowPowerMode(void);
+void Get_SerialNum(void);            /* C2: 用 MCU 唯一 ID 填充序列号字符串 */
 
 #endif /* __HW_CONFIG_H */

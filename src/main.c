@@ -8,6 +8,7 @@ int main(void)
   Set_System();
   Set_USBClock();
   USB_Interrupts_Config();
+  Get_SerialNum();              /* C2: 用 MCU UID 填充序列号字符串 */
   USB_Init();                  /* B2: 调用 MASS_init() → USB_SIL_Init() */
   PowerOn();                   /* B3: D+ 上拉使能 + USB 外设复位 + 中断使能 */
 
