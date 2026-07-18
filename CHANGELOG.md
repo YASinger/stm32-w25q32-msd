@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.1] - 2026-07-18
+### Added
+- 设备身份数据就位：USB 设备描述符（VID=0x0483 STMicroelectronics, PID=0x5720）已定义，为主机识别设备提供了数据基础
+- 新增设计文档《TR1-B1：usb_desc 最小设备描述符》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 A2~A4 表现一致（主机识别 Full-Speed，设备描述符请求失败）——符合本阶段预期（仅提供数据，回调机制待 B2 接入）
+- B1 验收通过，可推进 TR1-B2
+
 ## [0.1.4] - 2026-07-18
 ### Added
 - USB 中断全链路打通：从 NVIC 中断通道（A2）到中断入口再到事件分发器，USB 外设产生的中断现在能被 CPU 捕获并分发到对应处理函数，骨架阶段（TR1-A）全部完成

@@ -406,6 +406,11 @@
               <FilePath>.\src\usb_istr.c</FilePath>
             </File>
             <File>
+              <FileName>usb_desc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\usb_desc.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_it.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f10x_it.h</FilePath>
@@ -429,6 +434,11 @@
               <FileName>usb_istr.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\usb_istr.h</FilePath>
+            </File>
+            <File>
+              <FileName>usb_desc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\usb_desc.h</FilePath>
             </File>
           </Files>
         </Group>
