@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.3.5] - 2026-07-19
+### Added
+- 软件重连能力验证：设备现在能通过软件控制周期性断开/重连，无需物理拔插 USB 线——PC 设备管理器可观察到设备定期消失并重新出现，TR1-05 验收通过
+- 新增设计文档《TR1-C5：软件重连》
+
+### Fixed
+- 修复软件重连不生效：PowerOff() 缺少 USB 外设断电步骤（CNTR_PDWN），导致 USB 外设仍驱动 PA12 与 GPIO 输出低争抢引脚，D+ 拉不下去。补入 CNTR_FRES + CNTR_PDWN 后 USB 外设完全断电，主机正确检测到断开
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- 实测验证：LED 周期亮灭，设备管理器设备同步消失/重现，软件重连正常工作
+- **TR1 阶段全部 13 条任务完成**（A1~A4 + B1~B4 + C1~C5），6 项验收需求全部通过：设备可被检测、设备/配置/字符串描述符正确、可响应标准请求、支持软件重连
+- TR1 完成，可推进 TR2（BOT 协议与 SCSI 命令）
+
 ## [0.3.4] - 2026-07-19
 ### Added
 - USBSTOR 驱动加载成功：MSC 类请求（GET_MAX_LUN / Bulk-Only Reset）已实现，Windows 存储驱动能查询设备逻辑单元数并打开 Bulk 端点管道——设备从"驱动启动失败"进入"驱动已加载"状态

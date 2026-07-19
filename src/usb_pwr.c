@@ -36,7 +36,10 @@ void PowerOn(void)
 /* ── PowerOff: 断电, 断开 D+ 上拉 ─────────────────────────────────────────── */
 void PowerOff(void)
 {
-    USB_Cable_Config(DISABLE);                  /* PA12 输出低 → D+ 拉低       */
+    SetCNTR(CNTR_FRES);               /* 强制 USB 复位 */
+    SetISTR(0);                       /* 清中断标志 */
+    USB_Cable_Config(DISABLE);        /* PA12 输出低 → D+ 拉低 */
+    SetCNTR(CNTR_FRES + CNTR_PDWN);   /* USB 外设断电, 释放 PA12 控制权 */
     bDeviceState = UNCONNECTED;
 }
 

@@ -3,6 +3,15 @@
 #include "usb_lib.h"
 #include "usb_pwr.h"
 
+static void Delay(__IO uint32_t nCount)
+{
+  for(; nCount != 0; nCount--);
+}
+
+/* PC13 LED: 低电平点亮 (C8T6 最小系统板) */
+#define LED_ON()    GPIO_ResetBits(GPIOC, GPIO_Pin_13)
+#define LED_OFF()   GPIO_SetBits(GPIOC, GPIO_Pin_13)
+
 int main(void)
 {
   Set_System();
@@ -12,9 +21,30 @@ int main(void)
   USB_Init();                  /* B2: 调用 MASS_init() → USB_SIL_Init() */
   PowerOn();                   /* B3: D+ 上拉使能 + USB 外设复位 + 中断使能 */
 
-  while (bDeviceState != CONFIGURED);  /* B4: 等待枚举完成 (C3 后退出) */
+  /* 初始化 PC13 LED */
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+  GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+  GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_13;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_Init(GPIOC, &GPIO_InitStructure);
+  LED_OFF();                   /* 首次枚举等待期间 LED 灭 */
+
+  while (bDeviceState != CONFIGURED);  /* B4: 等待首次枚举完成 (C3 后退出) */
+
+  LED_ON();                    /* 枚举成功, LED 亮 */
 
   while (1)
   {
+    Delay(0x2B00000);          /* 约 10 秒正常运行, LED 亮 */
+
+    PowerOff();                /* C5: 软件断开, D+ 拉低 */
+    LED_OFF();                 /* 断开时 LED 灭 */
+    Delay(0x4B00000);          /* 约 2 秒, 确保主机检测到断开 */
+
+    PowerOn();                 /* C5: 软件重连, D+ 上拉 */
+    LED_ON();                  /* 重连时 LED 亮 */
+
+    while (bDeviceState != CONFIGURED); /* 等待重新枚举完成 */
   }
 }
