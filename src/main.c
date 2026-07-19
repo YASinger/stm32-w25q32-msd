@@ -36,15 +36,6 @@ int main(void)
 
   while (1)
   {
-    Delay(0x2B00000);          /* 约 10 秒正常运行, LED 亮 */
 
-    PowerOff();                /* C5: 软件断开, D+ 拉低 */
-    LED_OFF();                 /* 断开时 LED 灭 */
-    Delay(0x4B00000);          /* 约 2 秒, 确保主机检测到断开 */
-
-    PowerOn();                 /* C5: 软件重连, D+ 上拉 */
-    LED_ON();                  /* 重连时 LED 亮 */
-
-    while (bDeviceState != CONFIGURED); /* 等待重新枚举完成 */
   }
 }
