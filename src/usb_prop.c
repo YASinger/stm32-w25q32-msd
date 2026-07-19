@@ -47,6 +47,7 @@ static void MASS_init(void);
 static void MASS_Reset(void);
 static void MASS_Status_In(void);
 static void MASS_Status_Out(void);
+static RESULT MASS_Get_Interface_Setting(uint8_t Interface, uint8_t AlternateSetting);
 static uint8_t *MASS_GetDeviceDescriptor(uint16_t Length);
 static uint8_t *MASS_GetConfigDescriptor(uint16_t Length);
 static uint8_t *MASS_GetStringDescriptor(uint16_t Length);
@@ -69,7 +70,7 @@ DEVICE_PROP Device_Property = {
     MASS_Status_Out,              /* Process_Status_OUT */
     0,                            /* Class_Data_Setup — C4 实现 */
     0,                            /* Class_NoData_Setup — C4 实现 */
-    0,                            /* Class_Get_Interface_Setting — C3 实现 */
+    MASS_Get_Interface_Setting,  /* Class_Get_Interface_Setting */
     MASS_GetDeviceDescriptor,    /* GetDeviceDescriptor */
     MASS_GetConfigDescriptor,    /* GetConfigDescriptor */
     MASS_GetStringDescriptor,   /* GetStringDescriptor */
@@ -147,6 +148,12 @@ static void MASS_Status_Out(void)
     /* EP0 OUT 传输完成 — 核心库自动处理 */
 }
 
+static RESULT MASS_Get_Interface_Setting(uint8_t Interface, uint8_t AlternateSetting)
+{
+    if (Interface > 0) return USB_UNSUPPORT;
+    return USB_SUCCESS;
+}
+
 static uint8_t *MASS_GetDeviceDescriptor(uint16_t Length)
 {
     return Standard_GetDescriptorData(Length, &Device_Descriptor);
@@ -174,7 +181,16 @@ static uint8_t *MASS_GetStringDescriptor(uint16_t Length)
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 static void Mass_Storage_GetConfiguration(void)    { /* 库自动处理 */ }
-static void Mass_Storage_SetConfiguration(void)    { /* C3 实现状态机切换 */ }
+static void Mass_Storage_SetConfiguration(void)
+{
+    if (pInformation->Current_Configuration != 0) {
+        bDeviceState = CONFIGURED;
+        ClearDTOG_TX(ENDP1);
+        ClearDTOG_RX(ENDP2);
+    } else {
+        bDeviceState = ADDRESSED;
+    }
+}
 static void Mass_Storage_GetInterface(void)        { /* 库自动处理 */ }
 static void Mass_Storage_SetInterface(void)        { /* 单接口空操作 */ }
 static void Mass_Storage_GetStatus(void)           { /* 库内部处理 */ }

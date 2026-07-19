@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.3.3] - 2026-07-19
+### Added
+- 枚举状态机闭环：主机 SET_CONFIGURATION 后设备正确进入 CONFIGURED 状态，初始化序列第一次能完整跑完进入主循环——标志着枚举流程在协议层完整走通
+- 新增设计文档《TR1-C3：标准请求完整响应》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 C2 表现一致（Problem Code 10）——符合本阶段预期（C3 是内部状态机改进，USBTreeView 表面无差异；Problem Code 10 待 C4 解决）
+- C3 验收通过，可推进 TR1-C4
+
 ## [0.3.2] - 2026-07-19
 ### Added
 - 设备身份信息完整：PC 现在能显示设备的厂商（"STMicroelectronics"）、产品名（"STM32 W25Q32 Flash Disk"）和唯一序列号（读 MCU 96-bit UID 生成的 12 位十六进制），每块板子序列号不同
