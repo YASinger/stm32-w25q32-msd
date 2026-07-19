@@ -17,6 +17,14 @@
 #include "usb_desc.h"
 #include "usb_pwr.h"
 
+/* ── MSC Bulk-Only 类请求码 (USB MSC 规范) ─────────────────────────────── */
+#define GET_MAX_LUN         0xFE    /* 获取最大 LUN 号 (带 1 字节数据阶段, IN) */
+#define MASS_STORAGE_RESET  0xFF    /* Bulk-Only 传输复位 (无数据阶段) */
+#define LUN_DATA_LENGTH     0x01    /* GET_MAX_LUN 返回数据长度 */
+
+/* 本设备仅 1 个 LUN (逻辑单元号 0), Max_Lun=0 表示仅 LUN 0 */
+static uint32_t Max_Lun = 0;
+
 /* ── 端点配置表 ─────────────────────────────────────────────────────────── */
 DEVICE Device_Table = {
     EP_NUM,   /* Total_Endpoint = 3 (EP0/EP1/EP2) */
@@ -48,6 +56,8 @@ static void MASS_Reset(void);
 static void MASS_Status_In(void);
 static void MASS_Status_Out(void);
 static RESULT MASS_Get_Interface_Setting(uint8_t Interface, uint8_t AlternateSetting);
+static RESULT MASS_Data_Setup(uint8_t RequestNo);
+static RESULT MASS_NoData_Setup(uint8_t RequestNo);
 static uint8_t *MASS_GetDeviceDescriptor(uint16_t Length);
 static uint8_t *MASS_GetConfigDescriptor(uint16_t Length);
 static uint8_t *MASS_GetStringDescriptor(uint16_t Length);
@@ -68,8 +78,8 @@ DEVICE_PROP Device_Property = {
     MASS_Reset,                   /* Reset */
     MASS_Status_In,               /* Process_Status_IN */
     MASS_Status_Out,              /* Process_Status_OUT */
-    0,                            /* Class_Data_Setup — C4 实现 */
-    0,                            /* Class_NoData_Setup — C4 实现 */
+    MASS_Data_Setup,             /* Class_Data_Setup */
+    MASS_NoData_Setup,           /* Class_NoData_Setup */
     MASS_Get_Interface_Setting,  /* Class_Get_Interface_Setting */
     MASS_GetDeviceDescriptor,    /* GetDeviceDescriptor */
     MASS_GetConfigDescriptor,    /* GetConfigDescriptor */
@@ -152,6 +162,60 @@ static RESULT MASS_Get_Interface_Setting(uint8_t Interface, uint8_t AlternateSet
 {
     if (Interface > 0) return USB_UNSUPPORT;
     return USB_SUCCESS;
+}
+
+/* ── Get_Max_Lun: 返回 1 字节 LUN 数 (Max_Lun=0 表示仅 LUN 0) ────────────── */
+static uint8_t *Get_Max_Lun(uint16_t Length)
+{
+    if (Length == 0) {
+        /* Length=0: 告知核心库数据阶段总长度 */
+        pInformation->Ctrl_Info.Usb_wLength = LUN_DATA_LENGTH;
+        return 0;
+    }
+    /* Length!=0: 返回数据指针 */
+    return (uint8_t *)(&Max_Lun);
+}
+
+static RESULT MASS_Data_Setup(uint8_t RequestNo)
+{
+    uint8_t *(*CopyRoutine)(uint16_t) = NULL;
+
+    /* GET_MAX_LUN: 类请求 + 接口接收, wValue=0, wIndex=0, wLength=1 */
+    if ((Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
+        && (RequestNo == GET_MAX_LUN)
+        && (pInformation->USBwValue == 0)
+        && (pInformation->USBwIndex == 0)
+        && (pInformation->USBwLength == 0x01)) {
+        CopyRoutine = Get_Max_Lun;
+    } else {
+        return USB_UNSUPPORT;
+    }
+
+    /* 登记数据阶段回调, 核心库据此完成 IN 数据传输 */
+    pInformation->Ctrl_Info.CopyData = CopyRoutine;
+    pInformation->Ctrl_Info.Usb_wOffset = 0;
+    (*CopyRoutine)(0);             /* Length=0: 通知总数据长度 */
+
+    return USB_SUCCESS;
+}
+
+static RESULT MASS_NoData_Setup(uint8_t RequestNo)
+{
+    /* MASS_STORAGE_RESET: 类请求 + 接口接收, wValue=0, wIndex=0, wLength=0 */
+    if ((Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
+        && (RequestNo == MASS_STORAGE_RESET)
+        && (pInformation->USBwValue == 0)
+        && (pInformation->USBwIndex == 0)
+        && (pInformation->USBwLength == 0x00)) {
+
+        /* 复位 Bulk 端点 DTOG, 恢复到 CBW 等待状态 (TR1 无 BOT 状态机, 仅清 DTOG) */
+        ClearDTOG_TX(ENDP1);
+        ClearDTOG_RX(ENDP2);
+
+        return USB_SUCCESS;
+    }
+
+    return USB_UNSUPPORT;
 }
 
 static uint8_t *MASS_GetDeviceDescriptor(uint16_t Length)

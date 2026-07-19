@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.3.4] - 2026-07-19
+### Added
+- USBSTOR 驱动加载成功：MSC 类请求（GET_MAX_LUN / Bulk-Only Reset）已实现，Windows 存储驱动能查询设备逻辑单元数并打开 Bulk 端点管道——设备从"驱动启动失败"进入"驱动已加载"状态
+- 枚举流程完整走通：SET_CONFIGURATION 成功（Current Config Value=0x01），EP1 IN + EP2 OUT 两个 Bulk 管道建立，Manufacturer/Product String 完整显示
+- 新增设计文档《TR1-C4：MSC 类请求》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：USBSTOR.SYS 驱动加载，2 个 Bulk 管道建立，Current Config Value=0x01，Summary 显示完整厂商/产品/序列号——C4 核心验收通过
+- Problem Code 10 仍存在：USBSTOR 驱动通过 BOT 协议发 SCSI 命令探测存储介质时设备无响应（EP1/EP2 回调是 NOP_Process，BOT 状态机属 TR2）——这是 TR1 阶段能达到的最佳状态，Problem Code 彻底消失需 TR2
+- C4 验收通过，可推进 TR1-C5（软件重连）
+
 ## [0.3.3] - 2026-07-19
 ### Added
 - 枚举状态机闭环：主机 SET_CONFIGURATION 后设备正确进入 CONFIGURED 状态，初始化序列第一次能完整跑完进入主循环——标志着枚举流程在协议层完整走通
