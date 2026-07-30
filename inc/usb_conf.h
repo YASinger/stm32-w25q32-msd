@@ -59,10 +59,15 @@
 
 /*-------------------------------------------------------------*/
 /* CTR service routines                                        */
-/* 端点传输完成回调，TR1 阶段全部指向 NOP_Process（空函数）。      */
-/* TR2 将替换 EP1_IN_Callback 和 EP2_OUT_Callback 为真实 BOT 回调。*/
+/* 端点传输完成回调。                                            */
+/*                                                             */
+/* TR1 阶段全部指向 NOP_Process（空函数）。                       */
+/* TR2-A3 起 EP1_IN / EP2_OUT 改由 usb_endp.c 提供真实 BOT 回调：*/
+/*   - EP1_IN_Callback  -> Mass_Storage_In()  (CSW/数据 IN 完成) */
+/*   - EP2_OUT_Callback -> Mass_Storage_Out() (CBW/数据 OUT 接收) */
+/* 此处注释掉对应宏，链接器改用 usb_endp.c 中的函数定义。          */
 /*-------------------------------------------------------------*/
-#define  EP1_IN_Callback   NOP_Process
+//#define  EP1_IN_Callback   NOP_Process   /* TR2-A3: 替换为 usb_endp.c 中的真实函数 */
 #define  EP2_IN_Callback   NOP_Process
 #define  EP3_IN_Callback   NOP_Process
 #define  EP4_IN_Callback   NOP_Process
@@ -71,7 +76,7 @@
 #define  EP7_IN_Callback   NOP_Process
 
 #define  EP1_OUT_Callback  NOP_Process
-#define  EP2_OUT_Callback  NOP_Process
+//#define  EP2_OUT_Callback  NOP_Process   /* TR2-A3: 替换为 usb_endp.c 中的真实函数 */
 #define  EP3_OUT_Callback  NOP_Process
 #define  EP4_OUT_Callback  NOP_Process
 #define  EP5_OUT_Callback  NOP_Process

@@ -7,6 +7,7 @@
 
 #include "usb_lib.h"
 #include "usb_pwr.h"
+#include "usb_istr.h"   /* TR2-A3: EP1_IN_Callback / EP2_OUT_Callback 函数原型 */
 
 __IO uint16_t wIstr;
 __IO uint8_t  bIntPackSOF = 0;

@@ -5,6 +5,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.3] - 2026-07-31
+### Added
+- BOT 协议栈骨架就位：CBW/CSW 收发机制建立，端点回调从空操作（NOP）接管到真实 BOT 状态机——这是 TR2 的枢纽步骤，后续 SCSI 命令只需在此骨架上对接
+- 设备现在能正确响应主机的 BOT 传输：USBSTOR 下发的命令块（CBW）被接收并返回命令状态（CSW），主机与设备的 Bulk 传输通道真正打通
+- 新增设计文档《TR2-A3：usb_bot BOT 状态机骨架与端点回调接管》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：Problem Code 仍为 10（CM_PROB_FAILED_START）——符合本阶段预期。SCSI 命令处理尚未实现（B1 任务），所有命令走 default 分支返回 CSW_CMD_FAILED，USBSTOR 据此标记驱动启动失败。Problem Code 彻底消失需 B1 实现 SCSI 查询命令
+- 关键变化：从"CBW 无响应（NOP 回调）"变为"CBW 有响应（返回 FAILED）"，证明 EP1/EP2 回调已接管、BOT 状态机已运行——A3 验收通过，可推进 TR2-A4
+
 ## [1.1.2] - 2026-07-30
 ### Added
 - SCSI 响应数据就位：INQUIRY（设备类型/厂商/产品名）、REQUEST_SENSE（错误信息）、MODE_SENSE、READ_CAPACITY 等 7 组预填充数据已定义，为 SCSI 查询命令提供响应内容——这是 BOT 四层架构的数据层
