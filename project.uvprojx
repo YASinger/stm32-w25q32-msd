@@ -416,6 +416,11 @@
               <FilePath>.\src\usb_pwr.c</FilePath>
             </File>
             <File>
+              <FileName>mass_mal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\mass_mal.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_it.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f10x_it.h</FilePath>
@@ -454,6 +459,11 @@
               <FileName>usb_pwr.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\usb_pwr.h</FilePath>
+            </File>
+            <File>
+              <FileName>mass_mal.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\mass_mal.h</FilePath>
             </File>
           </Files>
         </Group>

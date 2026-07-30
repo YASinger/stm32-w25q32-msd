@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.1] - 2026-07-30
+### Added
+- 存储介质层就位：8KB SRAM 磁盘已实现（Init/Read/Write/GetStatus），为 BOT 协议和 SCSI 命令提供存储基础——这是 TR2 四层架构的最底层
+- 新增设计文档《TR2-A1：mass_mal SRAM 介质层》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 TR1-C5 一致（MAL 是最底层组件，上层未接入，无运行行为变化）——符合本阶段预期
+- A1 验收通过，可推进 TR2-A2
+
 ## [1.0.0] - 2026-07-19
 ### Milestone
 - **TR1 阶段全部完成**：USB 枚举通过，PC 识别为"USB 大容量存储设备"，设备/配置/字符串描述符完整，标准请求与 MSC 类请求正确响应，软件重连可用。13 条开发任务（A1~A4 + B1~B4 + C1~C5）全部提交，6 项验收需求全部通过
