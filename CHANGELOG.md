@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.2] - 2026-07-30
+### Added
+- SCSI 响应数据就位：INQUIRY（设备类型/厂商/产品名）、REQUEST_SENSE（错误信息）、MODE_SENSE、READ_CAPACITY 等 7 组预填充数据已定义，为 SCSI 查询命令提供响应内容——这是 BOT 四层架构的数据层
+- 新增设计文档《TR2-A2：scsi_data SCSI 静态数据》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 A1 一致（静态数据只定义不使用，上层未接入）——符合本阶段预期
+- A2 验收通过，可推进 TR2-A3
+
 ## [1.1.1] - 2026-07-30
 ### Added
 - 存储介质层就位：8KB SRAM 磁盘已实现（Init/Read/Write/GetStatus），为 BOT 协议和 SCSI 命令提供存储基础——这是 TR2 四层架构的最底层

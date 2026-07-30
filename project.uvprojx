@@ -421,6 +421,11 @@
               <FilePath>.\src\mass_mal.c</FilePath>
             </File>
             <File>
+              <FileName>scsi_data.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\scsi_data.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_it.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f10x_it.h</FilePath>
@@ -464,6 +469,11 @@
               <FileName>mass_mal.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\mass_mal.h</FilePath>
+            </File>
+            <File>
+              <FileName>scsi_data.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\scsi_data.h</FilePath>
             </File>
           </Files>
         </Group>
