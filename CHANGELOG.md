@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.4] - 2026-08-02
+### Added
+- 缓冲调度层就位：Read_Memory/Write_Memory 拆包组包框架已定义（64B 端点包 ↔ 512B 逻辑块），BOT 四层架构（端点回调 → BOT 状态机 → SCSI 命令 → 缓冲调度 → 介质层）的文件骨架至此全部就位——TR2 骨架阶段收官
+- 新增设计文档《TR2-A4：memory 缓冲调度骨架》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：与 A3 一致（Problem Code 10）——符合本阶段预期。memory 层无调用方（SCSI 命令层 B1 才创建），纯文件就位，无运行行为变化
+- A4 验收通过，TR2-A 骨架阶段（A1~A4）全部完成，可推进 TR2-B1（SCSI 查询命令）
+
 ## [1.1.3] - 2026-07-31
 ### Added
 - BOT 协议栈骨架就位：CBW/CSW 收发机制建立，端点回调从空操作（NOP）接管到真实 BOT 状态机——这是 TR2 的枢纽步骤，后续 SCSI 命令只需在此骨架上对接

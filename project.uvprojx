@@ -436,6 +436,11 @@
               <FilePath>.\src\usb_endp.c</FilePath>
             </File>
             <File>
+              <FileName>memory.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\memory.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_it.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f10x_it.h</FilePath>
@@ -489,6 +494,11 @@
               <FileName>usb_bot.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\usb_bot.h</FilePath>
+            </File>
+            <File>
+              <FileName>memory.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\memory.h</FilePath>
             </File>
           </Files>
         </Group>
