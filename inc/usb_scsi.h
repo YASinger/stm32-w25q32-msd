@@ -1,14 +1,14 @@
 /**
   ******************************************************************************
   * @file    usb_scsi.h
-  * @brief   SCSI 命令宏 + Sense Key/ASC 宏 + 函数声明 (TR2-B1)
+  * @brief   SCSI 命令宏 + Sense Key/ASC 宏 + 函数声明 (TR2-B1 / TR2-C1)
   *
   *          参考 ST 例程 usb_scsi.h，裁剪：
-  *          - 去掉 hw_config.h 依赖，自包含 stm32f10x.h
+  *          - 去掉 hw_config.h 依赖，自包含 stm32f10x.h + usb_type.h (bool)
   *          - 数据长度宏与静态数据 extern 复用 scsi_data.h (A2)，不重复定义
   *          - 去掉 Standard_Inquiry_Data2 extern（单 LUN）
   *          - SCSI_READ10/SCSI_WRITE10 用 #ifndef 守卫（与 usb_bot.h 占位共存）
-  *          - 不声明 C1~C3 的函数（SCSI_Read10_Cmd 等）
+  *          - C1 声明 SCSI_Read10_Cmd / SCSI_Address_Management (bool)
   ******************************************************************************
   */
 
@@ -17,6 +17,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
+#include "usb_type.h"     /* C1: bool 类型 (SCSI_Address_Management 返回类型) */
 #include "scsi_data.h"    /* 数据长度宏 + 静态数据 extern (A2 定义) */
 
 /* Exported types ------------------------------------------------------------*/
@@ -113,8 +114,11 @@ void SCSI_Valid_Cmd(uint8_t lun);
 #define SCSI_Verify12_Cmd               SCSI_Invalid_Cmd
 #define SCSI_Verify16_Cmd               SCSI_Invalid_Cmd
 
-/* C1~C3 再声明: SCSI_Read10_Cmd / SCSI_Write10_Cmd / SCSI_Verify10_Cmd /
- * SCSI_Format_Cmd / SCSI_Address_Management */
+/* C1: READ10 数据命令 */
+void SCSI_Read10_Cmd(uint8_t lun, uint32_t LBA, uint32_t BlockNbr);
+bool SCSI_Address_Management(uint8_t lun, uint8_t Cmd, uint32_t LBA, uint32_t BlockNbr);
+
+/* C2~C3 再声明: SCSI_Write10_Cmd / SCSI_Verify10_Cmd / SCSI_Format_Cmd */
 
 #endif /* __USB_SCSI_H */
 

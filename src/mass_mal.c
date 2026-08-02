@@ -32,8 +32,8 @@ uint16_t MAL_Init(uint8_t lun)
 {
     if (lun != 0) return MAL_FAIL;
 
-    /* SRAM 无需硬件初始化, 清零磁盘内容 */
-    memset(sram_disk, 0, SRAM_DISK_SIZE);
+    /* SRAM 无需硬件初始化; 填充 0xFF 模拟 Flash 擦除态 (C1) */
+    memset(sram_disk, 0xFF, SRAM_DISK_SIZE);
     return MAL_OK;
 }
 

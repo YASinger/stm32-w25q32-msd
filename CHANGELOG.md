@@ -5,6 +5,26 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.3.1] - 2026-08-02
+### Added
+- READ10 数据命令实现（TR2-C1）：usb_scsi.c 实现 SCSI_Read10_Cmd + SCSI_Address_Management（LBA 越界 → ADDRESS_OUT_OF_RANGE、CBW 长度不匹配 → INVALID_FIELED_IN_COMMAND；保留 WRITE10 分支供 C2 零改动复用）；usb_scsi.h 补 usb_type.h（bool 类型）与两个函数声明
+- usb_bot.c 恢复 CBW_Decode 的 READ10 case 与 Mass_Storage_In 的 BOT_DATA_IN 分支（WRITE10/VERIFY10/FORMAT_UNIT 保留 #if 0，C2/C3 恢复）
+- memory.c 恢复 Read_Memory 的 MAL_Read 调用：READ10 多包调度打通（MAL 一次读 512B → EP1 IN 64B×8 分包 → Length==0 置 BOT_DATA_IN_LAST → Set_CSW(PASSED)）
+- mass_mal.c MAL_Init 磁盘初始内容 0 → 0xFF（模拟 Flash 擦除态，对齐 TR2 框架 §3.3 的 0xFF 验收）
+- 新增设计文档《TR2-C1：usb_scsi READ10 与 memory 读调度》
+
+### Fixed
+- main.c 接线 MAL_Init(0)：标准例程由 hw_config.c 的 MAL_Config 调用，本项目已删 MAL_Config，导致 sram_disk（.bss 段）保持全 0、读盘无法呈现 0xFF——启动路径补调用后修复
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：Problem Code 保持消失，容量 8,192 Bytes——C1 回归通过
+- WinHex 读盘：**全 0xFF**——C1 核心验收通过（TR2 框架 §8.3 第 1 条）
+- 资源管理器双击 D: 提示"需要格式化"（Windows 已成功发出 READ10，读到 0xFF 判定无 MBR）——间接佐证
+- 格式化不可用（WRITE10 未实现，C2 恢复）——C1 边界确认
+- 首测读盘全 0：根因 MAL_Init 从未被调用（MAL_Config 已删），main.c 接线后重测全 0xFF
+- C1 验收通过，可推进 TR2-C2（SCSI_Write10_Cmd + Write_Memory/MAL_Write → 可格式化为 FAT、读写文件）
+
 ## [1.2.1] - 2026-08-02
 ### Added
 - SCSI 查询命令实现：新建 usb_scsi.c/h，实现 9 个查询命令（INQUIRY/READ_CAPACITY10/READ_FORMAT_CAPACITIES/MODE_SENSE6/10/REQUEST_SENSE/START_STOP_UNIT/TEST_UNIT_READY）+ Set_Scsi_Sense_Data + 不支持命令统一处理（SCSI_Invalid_Cmd/SCSI_Valid_Cmd + 12 个宏别名）——TR2-B 纵向切片首个里程碑

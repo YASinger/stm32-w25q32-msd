@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
   * @file    usb_scsi.c
-  * @brief   SCSI 查询命令实现 (TR2-B1)
+  * @brief   SCSI 命令实现 (TR2-B1 / TR2-C1)
   *
-  *          B1 阶段只实现 9 个查询命令 + Set_Scsi_Sense_Data + Invalid/Valid_Cmd。
-  *          与完成态差异: READ10/WRITE10 (C1/C2)、VERIFY10/FORMAT_UNIT (C3)、
-  *          SCSI_Address_Management (C1) 在后续阶段追加。
+  *          B1: 9 个查询命令 + Set_Scsi_Sense_Data + Invalid/Valid_Cmd。
+  *          C1: READ10 数据命令 (SCSI_Read10_Cmd + SCSI_Address_Management)。
+  *          与完成态差异: WRITE10 (C2)、VERIFY10/FORMAT_UNIT (C3) 后续追加。
   ******************************************************************************
   */
 
@@ -14,6 +14,7 @@
 #include "scsi_data.h"
 #include "mass_mal.h"      /* MAL_GetStatus / Mass_Block_* */
 #include "usb_bot.h"       /* CBW/CSW / Bot_Abort / Set_CSW / Transfer_Data_Request */
+#include "memory.h"        /* C1: Read_Memory (READ10 数据发送) */
 #include "usb_lib.h"       /* USB 库 (一致性) */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -25,6 +26,7 @@ extern Bulk_Only_CBW CBW;
 extern Bulk_Only_CSW CSW;
 extern uint32_t Mass_Block_Size[2];
 extern uint32_t Mass_Block_Count[2];
+extern uint8_t Bot_State;    /* C1: SCSI_Read10_Cmd 判断 BOT_IDLE/BOT_DATA_IN */
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -186,6 +188,83 @@ void Set_Scsi_Sense_Data(uint8_t lun, uint8_t Sens_Key, uint8_t Asc)
 void SCSI_Start_Stop_Unit_Cmd(uint8_t lun)
 {
   Set_CSW(CSW_CMD_PASSED, SEND_CSW_ENABLE);
+}
+
+/*******************************************************************************
+* Function Name  : SCSI_Read10_Cmd
+* Description    : SCSI Read10 Command (0x28)。
+*                  BOT_IDLE 进入: 地址校验 → 置 BOT_DATA_IN → Read_Memory 首发；
+*                  BOT_DATA_IN 进入: EP1 IN 中断续传, 再调 Read_Memory 发下一包。
+* Input          : lun - 逻辑单元号; LBA - 起始逻辑块; BlockNbr - 块数
+* Output         : None.
+* Return         : None.
+*******************************************************************************/
+void SCSI_Read10_Cmd(uint8_t lun, uint32_t LBA, uint32_t BlockNbr)
+{
+  if (Bot_State == BOT_IDLE)
+  {
+    if (!(SCSI_Address_Management(CBW.bLUN, SCSI_READ10, LBA, BlockNbr)))
+    {
+      return;   /* 地址/长度非法, SCSI_Address_Management 已做错误处理 */
+    }
+
+    if ((CBW.bmFlags & 0x80) != 0)   /* IN 方向 */
+    {
+      Bot_State = BOT_DATA_IN;
+      Read_Memory(lun, LBA, BlockNbr);
+    }
+    else
+    {
+      Bot_Abort(BOTH_DIR);
+      Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, INVALID_FIELED_IN_COMMAND);
+      Set_CSW(CSW_CMD_FAILED, SEND_CSW_ENABLE);
+    }
+    return;
+  }
+  else if (Bot_State == BOT_DATA_IN)
+  {
+    Read_Memory(lun, LBA, BlockNbr);
+  }
+}
+
+/*******************************************************************************
+* Function Name  : SCSI_Address_Management
+* Description    : READ10/WRITE10 共用地址校验 (C2 复用, 保留 WRITE10 分支)。
+*                  校验 LBA 越界与 CBW 声明长度不匹配。
+* Input          : lun - 逻辑单元号; Cmd - SCSI_READ10/SCSI_WRITE10;
+*                  LBA - 起始逻辑块; BlockNbr - 块数
+* Output         : None.
+* Return         : bool - TRUE 校验通过 / FALSE 失败 (已做错误处理)
+*******************************************************************************/
+bool SCSI_Address_Management(uint8_t lun, uint8_t Cmd, uint32_t LBA, uint32_t BlockNbr)
+{
+  if ((LBA + BlockNbr) > Mass_Block_Count[lun])
+  {
+    if (Cmd == SCSI_WRITE10)
+    {
+      Bot_Abort(BOTH_DIR);
+    }
+    Bot_Abort(DIR_IN);
+    Set_Scsi_Sense_Data(lun, ILLEGAL_REQUEST, ADDRESS_OUT_OF_RANGE);
+    Set_CSW(CSW_CMD_FAILED, SEND_CSW_DISABLE);
+    return (FALSE);
+  }
+
+  if (CBW.dDataLength != BlockNbr * Mass_Block_Size[lun])
+  {
+    if (Cmd == SCSI_WRITE10)
+    {
+      Bot_Abort(BOTH_DIR);
+    }
+    else
+    {
+      Bot_Abort(DIR_IN);
+    }
+    Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, INVALID_FIELED_IN_COMMAND);
+    Set_CSW(CSW_CMD_FAILED, SEND_CSW_DISABLE);
+    return (FALSE);
+  }
+  return (TRUE);
 }
 
 /*******************************************************************************

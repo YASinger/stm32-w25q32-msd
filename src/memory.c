@@ -1,10 +1,11 @@
 /**
   ******************************************************************************
   * @file    memory.c
-  * @brief   缓冲调度层 — 64B 端点包与 512B 逻辑块的拆包/组包 (TR2-A4)
+  * @brief   缓冲调度层 — 64B 端点包与 512B 逻辑块的拆包/组包 (TR2-A4 / TR2-C1)
   *
-  *          A4 阶段为骨架：MAL 调用用 #if 0 包裹（C1/C2 与 SCSI READ10/
-  *          WRITE10 一起恢复），Led_RW_* 删除（TR2 不引入 LED 读写指示）。
+  *          A4 阶段为骨架：MAL 调用用 #if 0 包裹。C1 恢复 Read_Memory 的
+  *          MAL_Read（READ10 读路径）；Write_Memory 的 MAL_Write 留待 C2。
+  *          Led_RW_* 删除（TR2 不引入 LED 读写指示）。
   *          缓冲调度逻辑（USB_SIL_Write 发送、Data_Buffer 拷贝、状态机
   *          流转、CSW.dDataResidue 递减）完整保留编译。
   *
@@ -62,12 +63,11 @@ void Read_Memory(uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length)
   {
     if (!Block_Read_count)
     {
-#if 0  /* === MAL 读介质到 Data_Buffer (C1 恢复) === */
       MAL_Read(lun ,
                Offset ,
                Data_Buffer,
                Mass_Block_Size[lun]);
-#endif
+
       USB_SIL_Write(EP1_IN, (uint8_t *)Data_Buffer, BULK_MAX_PACKET_SIZE);
 
       Block_Read_count = Mass_Block_Size[lun] - BULK_MAX_PACKET_SIZE;

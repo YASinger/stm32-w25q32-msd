@@ -1,14 +1,15 @@
 /**
   ******************************************************************************
   * @file    usb_bot.c
-  * @brief   BOT 状态机 + SCSI 命令分发 (TR2-A3 / TR2-B1)
+  * @brief   BOT 状态机 + SCSI 命令分发 (TR2-A3 / TR2-B1 / TR2-C1)
   *
   *          TR2-A3 建立骨架：CBW 解码/CSW 返回/状态机流转，SCSI 命令
   *          分发用 #if 0 包裹（全部返回 CSW_CMD_FAILED）。
   *          TR2-B1 接入 usb_scsi.c：恢复 21 个查询/不支持命令 case 与
-  *          4 处 Set_Scsi_Sense_Data() 调用。READ10/WRITE10/VERIFY10/
-  *          FORMAT_UNIT 仍 #if 0（C1/C2/C3 恢复）。
-  *            - Mass_Storage_In() 的 BOT_DATA_IN 分支用 #if 0 包裹 (C1)
+  *          4 处 Set_Scsi_Sense_Data() 调用。
+  *          TR2-C1 恢复 READ10: CBW_Decode 的 READ10 case 与
+  *          Mass_Storage_In() 的 BOT_DATA_IN 分支。WRITE10 (C2)、
+  *          VERIFY10/FORMAT_UNIT (C3) 仍 #if 0。
   *            - Mass_Storage_Out() 的 BOT_DATA_OUT 分支用 #if 0 包裹 (C2)
   *            - Max_Lun 变量替换为 mass_mal.h 的 MAX_LUN 宏
   ******************************************************************************
@@ -40,7 +41,7 @@ uint32_t SCSI_LBA, SCSI_BlkLen;
 * Description    : EP1 IN 传输完成回调，按 Bot_State 推进状态机。
 *                  - BOT_CSW_Send / BOT_ERROR: CSW 已发完，回到 IDLE 重新接收 CBW
 *                  - BOT_DATA_IN_LAST: 数据已发完，进入 CSW 阶段
-*                  - BOT_DATA_IN: READ10 多包续传 (B1/C1 恢复)
+*                  - BOT_DATA_IN: READ10 多包续传 (C1 恢复)
 * Input          : None.
 * Output         : None.
 * Return         : None.
@@ -55,7 +56,6 @@ void Mass_Storage_In(void)
       SetEPRxStatus(ENDP2, EP_RX_VALID);   /* 重新使能 EP2 接收下一条 CBW */
       break;
 
-#if 0  /* === BOT_DATA_IN 分支依赖 SCSI_Read10_Cmd (B1/C1 恢复) === */
     case BOT_DATA_IN:
       switch (CBW.CB[0])
       {
@@ -64,7 +64,6 @@ void Mass_Storage_In(void)
           break;
       }
       break;
-#endif
 
     case BOT_DATA_IN_LAST:
       Set_CSW(CSW_CMD_PASSED, SEND_CSW_ENABLE);
@@ -235,10 +234,11 @@ void CBW_Decode(void)
         case SCSI_VERIFY16:
           SCSI_Verify16_Cmd(CBW.bLUN);
           break;
-#if 0  /* === 数据命令 (C1/C2/C3 恢复) === */
+        /* === C1: READ10 数据命令 (恢复) === */
         case SCSI_READ10:
           SCSI_Read10_Cmd(CBW.bLUN, SCSI_LBA, SCSI_BlkLen);
           break;
+#if 0  /* === 数据命令 (C2/C3 恢复) === */
         case SCSI_WRITE10:
           SCSI_Write10_Cmd(CBW.bLUN, SCSI_LBA, SCSI_BlkLen);
           break;

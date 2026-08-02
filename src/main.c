@@ -2,6 +2,7 @@
 #include "hw_config.h"
 #include "usb_lib.h"
 #include "usb_pwr.h"
+#include "mass_mal.h"                   /* C1: MAL_Init (SRAM 介质初始化) */
 
 static void Delay(__IO uint32_t nCount)
 {
@@ -18,6 +19,9 @@ int main(void)
   Set_USBClock();
   USB_Interrupts_Config();
   Get_SerialNum();              /* C2: 用 MCU UID 填充序列号字符串 */
+  MAL_Init(0);                  /* C1: SRAM 介质初始化 (填 0xFF 模拟擦除态).
+                                   标准例程由 hw_config.c 的 MAL_Config 调用,
+                                   本项目已删 MAL_Config, 故在此接线. */
   USB_Init();                  /* B2: 调用 MASS_init() → USB_SIL_Init() */
   PowerOn();                   /* B3: D+ 上拉使能 + USB 外设复位 + 中断使能 */
 
