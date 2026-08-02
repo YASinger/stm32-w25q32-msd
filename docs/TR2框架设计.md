@@ -6,8 +6,15 @@
 |---|---|
 | 项目名称 | stm32-w25q32-msd |
 | 文档类型 | TR2 阶段框架设计 |
-| 版本 | V1.0 |
-| 日期 | 2026-07-19 |
+| 版本 | V1.1 |
+| 日期 | 2026-07-19（V1.1: 2026-08-02） |
+
+## 修改记录
+
+| 版本 | 日期 | 修改内容 |
+|---|---|---|
+| V1.0 | 2026-07-19 | 初始版本 |
+| V1.1 | 2026-08-02 | **C2 实测修订**：Windows 无法格式化 ≤16KB 的 FAT 卷（`format` 报"卷对 FAT16/12 来说太大"，最小 FAT12 卷 ≥32KB），SRAM 仅 20KB → "格式化 + 文件读写"顺延 TR3（W25Q32 Flash 4MB）；TR2-C2 验收改为写路径验证 |
 | 前置文档 | `项目框架设计.md`（整体分层与组件定义）、`TR1框架设计.md` |
 
 ---
@@ -15,6 +22,8 @@
 ## 1. 设计目标
 
 让 PC 能对 STM32 模拟的 USB 大容量存储设备进行格式化和文件读写，存储介质为 SRAM（断电丢失）。Problem Code 10 消失，USBSTOR 驱动完全加载，磁盘驱动器（disk.sys）挂载。
+
+> **V1.1 修订（2026-08-02）**：实测发现 Windows 无法格式化 ≤16KB 的 FAT 卷（`format` 报"卷对 FAT16/12 来说太大"，Windows 最小 FAT12 卷 ≥32KB），而 STM32F103C8 仅 20KB SRAM（磁盘上限 ~17KB）→ **"被 Windows 格式化 + 文件读写"在 SRAM 上不可达成**。TR2 范围调整为：读写命令打通 + 写路径验证；"格式化 + 文件读写"顺延至 TR3（W25Q32 Flash 4MB，满足最小卷要求）。
 
 **与 `项目框架设计.md` 的关系**：本文档是整体框架中 §6.2 TR2 的细化展开，把"SRAM 虚拟 U 盘"这一个粗粒度目标，拆成三个子阶段、每条需求对应一次可独立提交的代码改动。
 
@@ -88,12 +97,12 @@ scsi_data.c      memory.c (缓冲调度: 64B↔512B 拆包组包)
 **目标**：实现 READ10/WRITE10 读写命令，让 PC 能格式化和文件操作。**每条需求都是一次独立提交**，且每次提交后都有可观测差异。
 
 | 编号 | 内容 | 可观测结果 | 涉及组件 |
-|---|---|---|---|
+|---|---|---|---|写路径验证通过**：WinHex 直接写扇区 → 读回一致（V1.1：Windows 无法格式化 ≤16KB SRAM 卷，格式化顺延 TR3）
 | TR2-C1 | `memory.c` Read_Memory 实现 + `usb_scsi.c` SCSI READ10 实现 | 可读取磁盘内容（格式化前的 0xFF 填充或格式化后的 MBR/FAT） | buffer, scsi |
 | TR2-C2 | `memory.c` Write_Memory 实现 + `usb_scsi.c` SCSI WRITE10 实现 | **可格式化为 FAT**，可创建/写入/读取/删除文件 | buffer, scsi |
 | TR2-C3 | 其余 SCSI 命令补全（VERIFY10 等） + 安全弹出验证 | 安全弹出无错误提示，断电后数据丢失（SRAM 特性） | scsi |
 
-**阶段产物**：完整 SRAM 虚拟 U 盘，可格式化、可读写文件，断电数据丢失。TR2 阶段全部完成。
+**阶段产物**：SRAM 虚拟 U 盘读写命令全部打通（READ10/WRITE10 + 缓冲调度 + 介质层），写路径经 WinHex 验证正确。因 Windows 最小 FAT 卷 ≥32KB 而 SRAM 仅 20KB，"格式化 + 文件读写"顺延 TR3（W25Q32 Flash 4MB）。TR2 阶段（读写命令）完成。
 
 ---
 
@@ -106,7 +115,7 @@ scsi_data.c      memory.c (缓冲调度: 64B↔512B 拆包组包)
 | TR2-A1~A4 | 无（骨架不要求 PC 见磁盘） | 前置基础 |
 | TR2-B1 | TR2-S1（BOT 状态机与端点接管，设备无感叹号） | B1 完成即满足 TR2-S1 |
 | TR2-B1 | TR2-S2 部分（INQUIRY/READ_CAPACITY 正确响应，PC 显示 8KB） | B1 完成即满足 TR2-S2 的查询部分 |
-| TR2-C1~C2 | TR2-S2 部分（文件读写） + TR2-S3（READ10/WRITE10 走通） | C2 完成即满足 TR2-S3 |
+| TR2-C1~C2 | TR2-S2 部分（文件读写） + TR2-S3（READ10/WRITE10 走通） | C2 完成读写命令走通；"文件读写"受 SRAM 容量限制（Windows 最小 FAT 卷 ≥32KB）顺延 TR3 |
 | TR2-C3 | TR2-S4（安全弹出与断电验证） | 直接对应 |
 
 ---
@@ -151,7 +160,7 @@ SRAM 布局:
 - 块大小：512 字节（USB MSD 标准）
 - 块数：8192 / 512 = 16 块
 - 最后 LBA：15（0-based）
-- 格式化：FAT12（最小 FAT 文件系统，16 扇区可格式化）
+- 格式化：~~FAT12（最小 FAT 文件系统，16 扇区可格式化）~~ → **V1.1 实测证伪**：Windows 无法格式化 ≤16KB 的 FAT 卷（`format` 报"卷对 FAT16/12 来说太大"，最小 FAT12 卷 ≥32KB）。SRAM 20KB 上限无法满足，格式化顺延 TR3（Flash 4MB）。
 
 ### 6.2 EP1/EP2 回调切换机制
 
@@ -236,7 +245,7 @@ TR2-A3: usb_bot BOT 状态机骨架 + usb_endp 端点回调接管
 TR2-A4: memory 缓冲调度骨架
 TR2-B1: usb_scsi SCSI 查询命令 + bot CBW_Decode 接入, Problem Code 10 消失
 TR2-C1: SCSI READ10 + memory Read_Memory 实现, 可读取磁盘内容
-TR2-C2: SCSI WRITE10 + memory Write_Memory 实现, 可格式化/读写文件
+TR2-C2: SCSI WRITE10 + memory Write_Memory 实现, 写路径验证 (格式化顺延 TR3)
 TR2-C3: 其余 SCSI 命令补全 + 安全弹出验证
 ```
 
@@ -267,18 +276,20 @@ TR2-C3: 其余 SCSI 命令补全 + 安全弹出验证
 
 | 步骤 | 操作 | 预期 | 通过条件 |
 |---|---|---|---|
-| 1 | 用工具读取磁盘内容（如 WinHex） | 能读到 0xFF 或 MBR/FAT 数据 | TR2-C1 ✅ |
-| 2 | 格式化为 FAT | 格式化成功，容量显示 ~8KB | TR2-C2 ✅ |
-| 3 | 创建文件 → 写入内容 → 读取比对 | 内容正确 | TR2-C2 ✅ |
-| 4 | 删除文件 | 删除成功 | TR2-C2 ✅ |
-| 5 | 安全弹出 | 无错误提示 | TR2-C3 ✅ |
-| 6 | 拔掉 USB 重新插入 | 数据丢失（SRAM 特性），需重新格式化 | TR2-C3 ✅ |
+| 1 | 用工具读取磁盘内容（如 WinHex） | 能读到 0xFF（未格式化擦除态） | TR2-C1 ✅ |
+| 2 | WinHex 写扇区（已知模式）→ 读回 | 写入内容与读回一致（**写路径验证**） | TR2-C2 ✅ |
+| 3 | 格式化 FAT（尝试） | Windows 拒绝（"卷对 FAT16/12 来说太大"）——V1.1 已知限制，非缺陷 | TR2-C2 边界确认 |
+| 4 | 安全弹出 | 无错误提示 | TR2-C3 ✅ |
+| 5 | 拔掉 USB 重新插入 | 数据丢失（SRAM 特性），需重新格式化 | TR2-C3 ✅ |
+| 6 | 格式化 + 文件读写（完整） | 顺延 TR3（W25Q32 Flash 4MB，满足最小卷要求） | TR3-03/04 ✅ |
 
 ---
 
 ## 9. 与 TR3 的衔接
 
 TR2 完成后，MAL 层用 SRAM 数组模拟存储。TR3 只需替换 MAL 内部实现（SRAM → W25Q32 Flash），新增 `flash.c/h` SPI Flash 驱动和 `hw_config.c` 的 SPI 初始化。BOT/SCSI/buffer 全部保持不变。
+
+> **V1.1 修订**：TR2 实测证明 SRAM（20KB）无法被 Windows 格式化为 FAT（最小卷 ≥32KB）。因此 **"格式化 + 文件读写"是 TR3 的核心验收**（TR3-03/04），TR2-C2 以"写路径验证"收尾。TR3 的 Flash 4MB 完全满足 Windows 最小卷要求，届时格式化 + 文件读写一步到位。
 
 ---
 

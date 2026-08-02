@@ -95,7 +95,8 @@ uint8_t ReadFormatCapacity_Data[] = {
     0x08,   /* Capacity List Length: 8 */
     /* Block Count (4 字节, 运行时填) */
     0, 0, 0, 0,
-    /* Block Length (4 字节) */
-    0x02,   /* Descriptor Code: Formatted Media */
+    /* Block Length (4 字节: 高位含 Descriptor Type 2bit + Block Length 30bit)
+       运行时填 [9..11] = 512, [8] 必须为 0 (原 0x02 会被解析成 33.5MB 错误块长) */
+    0x00,
     0, 0, 0
 };

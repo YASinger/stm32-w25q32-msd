@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * @file    usb_scsi.h
-  * @brief   SCSI 命令宏 + Sense Key/ASC 宏 + 函数声明 (TR2-B1 / TR2-C1)
+  * @brief   SCSI 命令宏 + Sense Key/ASC 宏 + 函数声明 (TR2-B1 / TR2-C1 / TR2-C2)
   *
   *          参考 ST 例程 usb_scsi.h，裁剪：
   *          - 去掉 hw_config.h 依赖，自包含 stm32f10x.h + usb_type.h (bool)
@@ -9,6 +9,7 @@
   *          - 去掉 Standard_Inquiry_Data2 extern（单 LUN）
   *          - SCSI_READ10/SCSI_WRITE10 用 #ifndef 守卫（与 usb_bot.h 占位共存）
   *          - C1 声明 SCSI_Read10_Cmd / SCSI_Address_Management (bool)
+  *          - C2 声明 SCSI_Write10_Cmd
   ******************************************************************************
   */
 
@@ -118,7 +119,10 @@ void SCSI_Valid_Cmd(uint8_t lun);
 void SCSI_Read10_Cmd(uint8_t lun, uint32_t LBA, uint32_t BlockNbr);
 bool SCSI_Address_Management(uint8_t lun, uint8_t Cmd, uint32_t LBA, uint32_t BlockNbr);
 
-/* C2~C3 再声明: SCSI_Write10_Cmd / SCSI_Verify10_Cmd / SCSI_Format_Cmd */
+/* C2: WRITE10 数据命令 */
+void SCSI_Write10_Cmd(uint8_t lun, uint32_t LBA, uint32_t BlockNbr);
+
+/* C3 再声明: SCSI_Verify10_Cmd / SCSI_Format_Cmd */
 
 #endif /* __USB_SCSI_H */
 

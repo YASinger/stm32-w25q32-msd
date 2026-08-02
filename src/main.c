@@ -22,7 +22,7 @@ int main(void)
   MAL_Init(0);                  /* C1: SRAM 介质初始化 (填 0xFF 模拟擦除态).
                                    标准例程由 hw_config.c 的 MAL_Config 调用,
                                    本项目已删 MAL_Config, 故在此接线. */
-  USB_Init();                  /* B2: 调用 MASS_init() → USB_SIL_Init() */
+  USB_Init( );                  /* B2: 调用 MASS_init() → USB_SIL_Init() */
   PowerOn();                   /* B3: D+ 上拉使能 + USB 外设复位 + 中断使能 */
 
   /* 初始化 PC13 LED */

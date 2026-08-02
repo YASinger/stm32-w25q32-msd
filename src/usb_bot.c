@@ -1,16 +1,17 @@
 /**
   ******************************************************************************
   * @file    usb_bot.c
-  * @brief   BOT 状态机 + SCSI 命令分发 (TR2-A3 / TR2-B1 / TR2-C1)
+  * @brief   BOT 状态机 + SCSI 命令分发 (TR2-A3 / TR2-B1 / TR2-C1 / TR2-C2)
   *
   *          TR2-A3 建立骨架：CBW 解码/CSW 返回/状态机流转，SCSI 命令
   *          分发用 #if 0 包裹（全部返回 CSW_CMD_FAILED）。
   *          TR2-B1 接入 usb_scsi.c：恢复 21 个查询/不支持命令 case 与
   *          4 处 Set_Scsi_Sense_Data() 调用。
   *          TR2-C1 恢复 READ10: CBW_Decode 的 READ10 case 与
-  *          Mass_Storage_In() 的 BOT_DATA_IN 分支。WRITE10 (C2)、
+  *          Mass_Storage_In() 的 BOT_DATA_IN 分支。
+  *          TR2-C2 恢复 WRITE10: CBW_Decode 的 WRITE10 case 与
+  *          Mass_Storage_Out() 的 BOT_DATA_OUT 分支。
   *          VERIFY10/FORMAT_UNIT (C3) 仍 #if 0。
-  *            - Mass_Storage_Out() 的 BOT_DATA_OUT 分支用 #if 0 包裹 (C2)
   *            - Max_Lun 变量替换为 mass_mal.h 的 MAX_LUN 宏
   ******************************************************************************
   */
@@ -94,7 +95,7 @@ void Mass_Storage_Out(void)
       CBW_Decode();
       break;
 
-#if 0  /* === BOT_DATA_OUT 分支依赖 SCSI_Write10_Cmd (B1/C2 恢复) === */
+    /* === C2: WRITE10 数据续传 (恢复) === */
     case BOT_DATA_OUT:
       if (CBW.CB[0] == SCSI_WRITE10)
       {
@@ -104,7 +105,6 @@ void Mass_Storage_Out(void)
       Bot_Abort(DIR_OUT);
       Set_CSW(CSW_PHASE_ERROR, SEND_CSW_DISABLE);
       break;
-#endif
 
     default:
       Bot_Abort(BOTH_DIR);
@@ -238,10 +238,11 @@ void CBW_Decode(void)
         case SCSI_READ10:
           SCSI_Read10_Cmd(CBW.bLUN, SCSI_LBA, SCSI_BlkLen);
           break;
-#if 0  /* === 数据命令 (C2/C3 恢复) === */
+        /* === C2: WRITE10 数据命令 (恢复) === */
         case SCSI_WRITE10:
           SCSI_Write10_Cmd(CBW.bLUN, SCSI_LBA, SCSI_BlkLen);
           break;
+#if 0  /* === 数据命令 (C3 恢复) === */
         case SCSI_VERIFY10:
           SCSI_Verify10_Cmd(CBW.bLUN);
           break;

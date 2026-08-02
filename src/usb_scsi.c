@@ -1,11 +1,12 @@
 /**
   ******************************************************************************
   * @file    usb_scsi.c
-  * @brief   SCSI 命令实现 (TR2-B1 / TR2-C1)
+  * @brief   SCSI 命令实现 (TR2-B1 / TR2-C1 / TR2-C2)
   *
   *          B1: 9 个查询命令 + Set_Scsi_Sense_Data + Invalid/Valid_Cmd。
   *          C1: READ10 数据命令 (SCSI_Read10_Cmd + SCSI_Address_Management)。
-  *          与完成态差异: WRITE10 (C2)、VERIFY10/FORMAT_UNIT (C3) 后续追加。
+  *          C2: WRITE10 数据命令 (SCSI_Write10_Cmd, 复用 SCSI_Address_Management)。
+  *          与完成态差异: VERIFY10/FORMAT_UNIT (C3) 后续追加。
   ******************************************************************************
   */
 
@@ -82,6 +83,7 @@ void SCSI_ReadFormatCapacity_Cmd(uint8_t lun)
   ReadFormatCapacity_Data[5]  = (uint8_t)(Mass_Block_Count[lun] >> 16);
   ReadFormatCapacity_Data[6]  = (uint8_t)(Mass_Block_Count[lun] >>  8);
   ReadFormatCapacity_Data[7]  = (uint8_t)(Mass_Block_Count[lun]);
+  ReadFormatCapacity_Data[8]  = 0;   /* C2: Block Length 高位必须为 0 (原 0x02 解析成 33.5MB) */
   ReadFormatCapacity_Data[9]  = (uint8_t)(Mass_Block_Size[lun] >>  16);
   ReadFormatCapacity_Data[10] = (uint8_t)(Mass_Block_Size[lun] >>   8);
   ReadFormatCapacity_Data[11] = (uint8_t)(Mass_Block_Size[lun]);
@@ -224,6 +226,43 @@ void SCSI_Read10_Cmd(uint8_t lun, uint32_t LBA, uint32_t BlockNbr)
   else if (Bot_State == BOT_DATA_IN)
   {
     Read_Memory(lun, LBA, BlockNbr);
+  }
+}
+
+/*******************************************************************************
+* Function Name  : SCSI_Write10_Cmd
+* Description    : SCSI Write10 Command (0x2A)。
+*                  BOT_IDLE 进入: 地址校验 → 置 BOT_DATA_OUT → 使能 EP2 接收数据；
+*                  BOT_DATA_OUT 进入: EP2 OUT 中断续传, 调 Write_Memory 组包。
+* Input          : lun - 逻辑单元号; LBA - 起始逻辑块; BlockNbr - 块数
+* Output         : None.
+* Return         : None.
+*******************************************************************************/
+void SCSI_Write10_Cmd(uint8_t lun, uint32_t LBA, uint32_t BlockNbr)
+{
+  if (Bot_State == BOT_IDLE)
+  {
+    if (!(SCSI_Address_Management(CBW.bLUN, SCSI_WRITE10, LBA, BlockNbr)))
+    {
+      return;   /* 地址/长度非法, SCSI_Address_Management 已做错误处理 */
+    }
+
+    if ((CBW.bmFlags & 0x80) == 0)   /* OUT 方向 */
+    {
+      Bot_State = BOT_DATA_OUT;
+      SetEPRxStatus(ENDP2, EP_RX_VALID);  /* 使能 EP2 接收 WRITE10 数据 */
+    }
+    else
+    {
+      Bot_Abort(DIR_IN);
+      Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, INVALID_FIELED_IN_COMMAND);
+      Set_CSW(CSW_CMD_FAILED, SEND_CSW_DISABLE);
+    }
+    return;
+  }
+  else if (Bot_State == BOT_DATA_OUT)
+  {
+    Write_Memory(lun, LBA, BlockNbr);
   }
 }
 
