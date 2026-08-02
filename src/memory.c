@@ -18,7 +18,7 @@
 #include "mass_mal.h"     /* Mass_Block_Size / MAL_Read / MAL_Write */
 #include "usb_lib.h"      /* USB_SIL_Write / SetEPTxCount / SetEPxStatus */
 
-/* B1 恢复: #include "usb_scsi.h" */
+#include "usb_scsi.h"   /* B1: SCSI 宏/函数声明 (保持与完成态一致) */
 
 /* Private variables ---------------------------------------------------------*/
 __IO uint32_t Block_Read_count = 0;

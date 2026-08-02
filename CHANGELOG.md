@@ -5,6 +5,19 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.1] - 2026-08-02
+### Added
+- SCSI 查询命令实现：新建 usb_scsi.c/h，实现 9 个查询命令（INQUIRY/READ_CAPACITY10/READ_FORMAT_CAPACITIES/MODE_SENSE6/10/REQUEST_SENSE/START_STOP_UNIT/TEST_UNIT_READY）+ Set_Scsi_Sense_Data + 不支持命令统一处理（SCSI_Invalid_Cmd/SCSI_Valid_Cmd + 12 个宏别名）——TR2-B 纵向切片首个里程碑
+- usb_bot.c 恢复 CBW_Decode 的 21 个 case（9 查询 + 12 不支持）与 4 处 Set_Scsi_Sense_Data 调用；READ10/WRITE10/VERIFY10/FORMAT_UNIT 保留 #if 0（C1/C2/C3 恢复）
+- memory.c 恢复 #include "usb_scsi.h"；工程加入 usb_scsi.c/h
+- 新增设计文档《TR2-B1：usb_scsi SCSI 查询命令》
+
+### 状态
+- Keil 编译链接通过，0 Error 0 Warning
+- USBTreeView 实测：**Problem Code 10 消失**，USBSTOR + disk.sys + volume.sys 全部加载，设备管理器出现磁盘驱动器 "STM32 SRAM Disk USB Device"，Size 8,192 Bytes（16 块 × 512B 精确匹配），卷已创建并分配盘符 D:——B1 核心验收通过
+- 格式化预期不可用（WRITE10 未实现，C2 恢复）——B1 边界确认
+- B1 验收通过，可推进 TR2-C1（READ10）
+
 ## [1.1.4] - 2026-08-02
 ### Added
 - 缓冲调度层就位：Read_Memory/Write_Memory 拆包组包框架已定义（64B 端点包 ↔ 512B 逻辑块），BOT 四层架构（端点回调 → BOT 状态机 → SCSI 命令 → 缓冲调度 → 介质层）的文件骨架至此全部就位——TR2 骨架阶段收官

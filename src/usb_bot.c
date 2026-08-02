@@ -1,18 +1,16 @@
 /**
   ******************************************************************************
   * @file    usb_bot.c
-  * @brief   BOT 状态机骨架 (TR2-A3)
+  * @brief   BOT 状态机 + SCSI 命令分发 (TR2-A3 / TR2-B1)
   *
-  *          本文件是 TR2-A3 阶段的骨架版本，与完成态 usb_bot.c 的差异：
-  *            - 删除 #include "usb_scsi.h"/"memory.h"（B1/A4 提供）
-  *            - CBW_Decode() 的 SCSI 命令分发 switch 用 #if 0 包裹
-  *            - Mass_Storage_In() 的 BOT_DATA_IN 分支用 #if 0 包裹
-  *            - Mass_Storage_Out() 的 BOT_DATA_OUT 分支用 #if 0 包裹
-  *            - Set_Scsi_Sense_Data() 调用全部删除（B1 在 usb_scsi.c 提供）
+  *          TR2-A3 建立骨架：CBW 解码/CSW 返回/状态机流转，SCSI 命令
+  *          分发用 #if 0 包裹（全部返回 CSW_CMD_FAILED）。
+  *          TR2-B1 接入 usb_scsi.c：恢复 21 个查询/不支持命令 case 与
+  *          4 处 Set_Scsi_Sense_Data() 调用。READ10/WRITE10/VERIFY10/
+  *          FORMAT_UNIT 仍 #if 0（C1/C2/C3 恢复）。
+  *            - Mass_Storage_In() 的 BOT_DATA_IN 分支用 #if 0 包裹 (C1)
+  *            - Mass_Storage_Out() 的 BOT_DATA_OUT 分支用 #if 0 包裹 (C2)
   *            - Max_Lun 变量替换为 mass_mal.h 的 MAX_LUN 宏
-  *
-  *          A3 后 BOT 状态机已就位，CBW 能被接收并返回 CSW_CMD_FAILED。
-  *          B1 取消 #if 0 包裹后即可对接 SCSI 命令实现。
   ******************************************************************************
   */
 
@@ -20,6 +18,7 @@
 #include "usb_lib.h"
 #include "usb_bot.h"
 #include "mass_mal.h"
+#include "usb_scsi.h"    /* B1: SCSI 命令宏 + 查询命令函数声明 */
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -144,7 +143,7 @@ void CBW_Decode(void)
     Bot_Abort(BOTH_DIR);
     /* 清签名以禁用 clear feature，直到收到 Mass Storage Reset */
     CBW.dSignature = 0;
-    /* A3 删除: Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, PARAMETER_LIST_LENGTH_ERROR); */
+    Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, PARAMETER_LIST_LENGTH_ERROR);
     Set_CSW(CSW_CMD_FAILED, SEND_CSW_DISABLE);
     return;
   }
@@ -164,14 +163,14 @@ void CBW_Decode(void)
     if ((CBW.bLUN > MAX_LUN) || (CBW.bCBLength < 1) || (CBW.bCBLength > 16))
     {
       Bot_Abort(BOTH_DIR);
-      /* A3 删除: Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, INVALID_FIELED_IN_COMMAND); */
+      Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, INVALID_FIELED_IN_COMMAND);
       Set_CSW(CSW_CMD_FAILED, SEND_CSW_DISABLE);
     }
     else
     {
       switch (CBW.CB[0])
       {
-#if 0  /* === SCSI 命令分发 (B1 恢复) === */
+        /* === B1: 查询命令 (恢复) === */
         case SCSI_REQUEST_SENSE:
           SCSI_RequestSense_Cmd(CBW.bLUN);
           break;
@@ -199,19 +198,7 @@ void CBW_Decode(void)
         case SCSI_TEST_UNIT_READY:
           SCSI_TestUnitReady_Cmd(CBW.bLUN);
           break;
-        case SCSI_READ10:
-          SCSI_Read10_Cmd(CBW.bLUN, SCSI_LBA, SCSI_BlkLen);
-          break;
-        case SCSI_WRITE10:
-          SCSI_Write10_Cmd(CBW.bLUN, SCSI_LBA, SCSI_BlkLen);
-          break;
-        case SCSI_VERIFY10:
-          SCSI_Verify10_Cmd(CBW.bLUN);
-          break;
-        case SCSI_FORMAT_UNIT:
-          SCSI_Format_Cmd(CBW.bLUN);
-          break;
-        /* Unsupported commands */
+        /* === B1: 不支持命令 (宏别名 → SCSI_Invalid_Cmd) === */
         case SCSI_MODE_SELECT10:
           SCSI_Mode_Select10_Cmd(CBW.bLUN);
           break;
@@ -248,10 +235,23 @@ void CBW_Decode(void)
         case SCSI_VERIFY16:
           SCSI_Verify16_Cmd(CBW.bLUN);
           break;
+#if 0  /* === 数据命令 (C1/C2/C3 恢复) === */
+        case SCSI_READ10:
+          SCSI_Read10_Cmd(CBW.bLUN, SCSI_LBA, SCSI_BlkLen);
+          break;
+        case SCSI_WRITE10:
+          SCSI_Write10_Cmd(CBW.bLUN, SCSI_LBA, SCSI_BlkLen);
+          break;
+        case SCSI_VERIFY10:
+          SCSI_Verify10_Cmd(CBW.bLUN);
+          break;
+        case SCSI_FORMAT_UNIT:
+          SCSI_Format_Cmd(CBW.bLUN);
+          break;
 #endif
         default:
           Bot_Abort(BOTH_DIR);
-          /* A3 删除: Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, INVALID_COMMAND); */
+          Set_Scsi_Sense_Data(CBW.bLUN, ILLEGAL_REQUEST, INVALID_COMMAND);
           Set_CSW(CSW_CMD_FAILED, SEND_CSW_DISABLE);
           break;
       }

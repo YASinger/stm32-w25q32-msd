@@ -441,6 +441,11 @@
               <FilePath>.\src\memory.c</FilePath>
             </File>
             <File>
+              <FileName>usb_scsi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\usb_scsi.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_it.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f10x_it.h</FilePath>
@@ -499,6 +504,11 @@
               <FileName>memory.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\memory.h</FilePath>
+            </File>
+            <File>
+              <FileName>usb_scsi.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\usb_scsi.h</FilePath>
             </File>
           </Files>
         </Group>
